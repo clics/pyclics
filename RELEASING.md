@@ -2,7 +2,7 @@
 Releasing pyclics
 =================
 
-Clone clics/clics2 and switch to the master branch. Then:
+Clone clics/pyclics and switch to the master branch. Then:
 
 - Do platform test via tox:
 ```shell
@@ -16,6 +16,7 @@ flake8 src/
 
 - Change version to the new version number in
   - setup.py
+  - src/pyclics/__init__.py
 
 - Commit your change of the version number:
 ```shell

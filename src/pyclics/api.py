@@ -56,7 +56,7 @@ class Clics(API):
         res = []
         for util in self.gsm.registeredUtilities():
             if util.provided == interfaces.IClusterer:
-               res.append(util.name)
+                res.append(util.name)
         return res
 
     def get_clusterer(self, name):
