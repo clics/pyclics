@@ -295,7 +295,7 @@ def cluster(args):
     graph.remove_edges_from(removed)
 
     args.api.save_graph(graph, algo, args.threshold, args.edgefilter)
-    args.api.write_js_var('INFO', cluster_names, 'app', 'source', '{0}-names.js'.format(algo))
+    args.api.write_js_var(algo, cluster_names, 'app', 'source', 'cluster-names.js')
 
 
 @command('graph-stats')

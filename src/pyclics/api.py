@@ -3,7 +3,7 @@ import json
 import pkg_resources
 
 from clldutils.apilib import API
-from clldutils.path import write_text
+from clldutils.path import write_text, read_text
 from clldutils.misc import lazyproperty
 from clldutils import jsonlib
 from csvw.dsv import UnicodeWriter
@@ -109,7 +109,9 @@ class Clics(API):
 
     def write_js_var(self, var_name, var, *path):
         p = self.path(*path)
-        write_text(p, 'var ' + var_name + ' = ' + json.dumps(var, indent=2) + ';')
+        v = json.loads(read_text(p)[:-1].partition('=')[2]) if p.exists() else {}
+        v[var_name] = var
+        write_text(p, 'var CLUSTERS = ' + json.dumps(v, indent=2) + ';')
         self.file_written(p)
 
     def save_graph(self, graph, network, threshold, edgefilter):

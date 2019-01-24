@@ -19,19 +19,11 @@
 <div id="map" style="border: thin solid #ccc;"></div>
 
 <script type="text/javascript">
-var filename = document.location.href.split('?')[1]+'.json';
-if (filename.indexOf('infomap') != -1) {
-  filename='cluster/'+filename;
-}
-else if (filename.indexOf('subgraph') != -1){
-  filename = 'subgraph/'+filename;
-}
-else {}
+var filename = 'cluster/' + document.location.href.split('?')[1] + '.json';
 console.log(filename);
 </script>
 <script type="text/javascript" src="source/d3.v3.js"></script>
 <script type="text/javascript" src="source/topojson.js"></script>
-<script type="text/javascript" src="source/mousetrap.js"></script>
 <script type="text/javascript" src="source/visualize.js"></script>
 </body>
 </html>
