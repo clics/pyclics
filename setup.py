@@ -30,7 +30,7 @@ setup(
         'pyglottolog',
         'clldutils~=2.0',
         'geojson',
-        'python-igraph',
+        'python-igraph>=0.7.1',
         'networkx',
         'unidecode',
         'zope.component',
@@ -53,6 +53,5 @@ setup(
     },
     entry_points={
         'console_scripts': ['clics=pyclics.__main__:main'],
-        'clics.plugin': ['pyclics=pyclics.plugin:includeme'],
     },
 )

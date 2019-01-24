@@ -40,21 +40,43 @@ def test_list(api, mocker, capsys):
     assert '9' in out
 
 
+def test_cluster_algos(api, mocker, capsys):
+    commands.cluster(mocker.Mock(api=api, args=['list']))
+    out, _ = capsys.readouterr()
+    assert 'infomap' in out
+
+
+def test_unknown_cluster_algo(api, mocker):
+    with pytest.raises(ParserError):
+        commands.cluster(mocker.Mock(api=api, args=['unknown-algo']))
+
+
 def test_workflow(api, mocker, capsys):
     args = mocker.Mock(
-        api=api, graphname='g', threshold=1, edgefilter='families', weight='FamilyWeight')
+        args=[],
+        api=api,
+        graphname='g',
+        threshold=1,
+        edgefilter='families',
+        weight='FamilyWeight')
     commands.colexification(args)
     out, err = capsys.readouterr()
     assert 'Concept B' in out
 
-    commands.communities(args)
+    args.args.append('infomap')
+    commands.cluster(args)
     # test overwriting:
-    commands.communities(args)
-    commands.subgraph(args, neighbor_weight=1)
-    commands.articulationpoints(args)
+    commands.cluster(args)
+
+    args.args = ['subgraph', 'neighbor_weight=1']
+    commands.cluster(args)
+    #commands.articulationpoints(args)
     commands.graph_stats(args)
     out, _ = capsys.readouterr()
     assert '499' in out and '480' in out and '209' in out
+
+    args.args = ['infomap', 'normalize=1']
+    commands.cluster(args)
 
     args.threshold = 3
     commands.colexification(args)

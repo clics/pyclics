@@ -7,12 +7,26 @@ from clldutils.path import write_text
 from clldutils.misc import lazyproperty
 from clldutils import jsonlib
 from csvw.dsv import UnicodeWriter
-from zope.component import getGlobalSiteManager
+from zope.component import getGlobalSiteManager, getUtility
 
 from pyclics.db import Database
 from pyclics.models import Network
+from pyclics import interfaces
+from pyclics import plugin
 
 __all__ = ['Clics']
+
+
+def register_clusterer(registry, obj, name=None):
+    registry.registerUtility(obj, interfaces.IClusterer, name or obj.__name__)
+
+
+def register_colexifier(registry, obj):
+    registry.registerUtility(obj, interfaces.IColexifier)
+
+
+def register_clicsfom(registry, obj):
+    registry.registerUtility(obj, interfaces.IClicsForm)
 
 
 class Clics(API):
@@ -24,9 +38,37 @@ class Clics(API):
         # Initialize component registry:
         self.gsm = getGlobalSiteManager()
 
-        # Load plugins:
+        # Add methods to register utilities to the registry, so plugins don't have to deal with
+        # ZCA details at all:
+        self.gsm.register_clusterer = register_clusterer.__get__(self.gsm)
+        self.gsm.register_colexifier = register_colexifier.__get__(self.gsm)
+        self.gsm.register_clicsform = register_clicsfom.__get__(self.gsm)
+
+        # Load defaults for pluggable functionality first:
+        plugin.includeme(self.gsm)
+
+        # Now load third-party plugins:
         for ep in pkg_resources.iter_entry_points('clics.plugin'):
             ep.load()(self.gsm)
+
+    @lazyproperty
+    def cluster_algorithms(self):
+        res = []
+        for util in self.gsm.registeredUtilities():
+            if util.provided == interfaces.IClusterer:
+               res.append(util.name)
+        return res
+
+    def get_clusterer(self, name):
+        return getUtility(interfaces.IClusterer, name)
+
+    @lazyproperty
+    def colexifier(self):
+        return getUtility(interfaces.IColexifier)
+
+    @lazyproperty
+    def clicsform(self):
+        return getUtility(interfaces.IClicsForm)
 
     def existing_dir(self, *comps, **kw):
         d = self.path()
@@ -44,7 +86,7 @@ class Clics(API):
 
     @lazyproperty
     def db(self):
-        return Database(self.path('clics.sqlite'))
+        return Database(self.path('clics.sqlite'), self.clicsform)
 
     @lazyproperty
     def graph_dir(self):
@@ -76,6 +118,3 @@ class Clics(API):
 
     def load_graph(self, network, threshold, edgefilter):
         return Network(network, threshold, edgefilter, self.graph_dir).graph
-
-    def load_network(self, nname, threshold, edgefilter):
-        return Network(nname, threshold, edgefilter, self.graph_dir)

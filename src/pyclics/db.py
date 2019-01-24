@@ -29,6 +29,10 @@ WHERE
     ds.id = p.dataset_id and f.dataset_id = ds.id and f.parameter_id = p.id
 GROUP BY ds.id"""
 
+    def __init__(self, fname, clics_form):
+        Database_.__init__(self, fname)
+        self.clics_form = clics_form
+
     @property
     def datasets(self):
         return sorted(r[0] for r in self.fetchall("select id from dataset"))
@@ -47,7 +51,7 @@ GROUP BY ds.id"""
         if table == 'FormTable':
             d = dict(zip(keys, values))
             keys = list(keys) + ['`clics_form`']
-            values = list(values) + [clics_form(d['`Form`'])]
+            values = list(values) + [self.clics_form(d['`Form`'])]
         return keys, values
 
     @property

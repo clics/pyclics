@@ -18,7 +18,8 @@ import networkx as nx
 from networkx.readwrite import json_graph
 from tabulate import tabulate
 
-from pyclics.util import full_colexification, networkx2igraph, get_communities
+from pyclics.util import get_communities
+from pyclics import interfaces
 
 
 @command('datasets')
@@ -94,6 +95,8 @@ def load(args):
     if not glottolog.exists():
         raise ParserError('glottolog repository does not exist')
 
+    args.log.info('using {0.__name__} implementation {1.__module__}:{1.__name__}'.format(
+        interfaces.IClicsForm, args.api.clicsform))
     args.api.db.create(exists_ok=True)
     args.log.info('loading datasets into {0}'.format(args.api.db.fname))
     in_db = args.api.db.datasets
@@ -113,8 +116,6 @@ def load(args):
 @command()
 def colexification(args):
     args.api._log = args.log
-    threshold = args.threshold or 1
-    edgefilter = args.edgefilter
     words = {}
 
     def clean(word):
@@ -136,9 +137,7 @@ def colexification(args):
 
     args.log.info('Adding edges to the graph')
     for v_, forms in tqdm(args.api.db.iter_wordlists(varieties), total=len(varieties), leave=False):
-        cols = full_colexification(forms)
-
-        for k, v in cols.items():
+        for v in args.api.colexifier(forms):
             for formA, formB in combinations(v, r=2):
                 # check for identical concept resulting from word-variants
                 if formA.concepticon_id != formB.concepticon_id:
@@ -180,11 +179,11 @@ def colexification(args):
         data['LanguageWeight'] = len(data['languages'])
         data['languages'] = ';'.join(data['languages'])
         data['wofam'] = ';'.join(data['wofam'])
-        if edgefilter == 'families' and data['FamilyWeight'] < threshold:
+        if args.edgefilter == 'families' and data['FamilyWeight'] < args.threshold:
             ignore_edges.append((edgeA, edgeB))
-        elif edgefilter == 'languages' and data['LanguageWeight'] < threshold:
+        elif args.edgefilter == 'languages' and data['LanguageWeight'] < args.threshold:
             ignore_edges.append((edgeA, edgeB))
-        elif edgefilter == 'words' and data['WordWeight'] < threshold:
+        elif args.edgefilter == 'words' and data['WordWeight'] < args.threshold:
             ignore_edges.append((edgeA, edgeB))
 
     G.remove_edges_from(ignore_edges)
@@ -201,269 +200,107 @@ def colexification(args):
         if count >= 10:
             break
     print(table.render(tablefmt='simple'))
-
-    args.api.save_graph(G, args.graphname or 'network', threshold, edgefilter)
+    print(args.api.save_graph(G, args.graphname, args.threshold, args.edgefilter))
 
 
 @command()
 def cluster(args):
     """cluster """
-    from zope.component import getAdapters
-    from pyclics.interfaces import IClusterer
+    from pyclics.util import parse_kwargs
 
     algo = args.args[0]
     if algo == 'list':
         print('Available algorithms:')
-        for adapter in args.api.gsm.registeredAdapters():
-            if adapter.provided == IClusterer:
-                print(adapter.name)
+        for name in args.api.cluster_algorithms:
+            print(name)
         return
 
-    for adapter in args.api.gsm.registeredAdapters():
-        if adapter.provided == IClusterer and adapter.name == algo:
-            break
-    else:
+    if algo not in args.api.cluster_algorithms:
         raise ParserError('Unknown cluster algorithm: {0}'.format(algo))
 
-    graph = args.api.load_graph('network', args.threshold or 3, args.edgefilter)
-    clusters = sorted(adapter.factory(graph, vars(args)), key=lambda c: (-len(c), c))
-    for c in clusters:
-        print(c)
+    graph = args.api.load_graph(args.graphname, args.threshold, args.edgefilter)
+    args.log.info('graph loaded')
+    kw = vars(args)
+    kw.update(parse_kwargs(*args.args[1:]))
+    neighbor_weight = int(kw.pop('neighbor_weight', 5))
 
+    clusters = sorted(args.api.get_clusterer(algo)(graph, vars(args)), key=lambda c: (-len(c), c))
+    args.log.info('computed clusters')
 
-@command('articulation-points')
-def articulationpoints(args):
-    """Compute articulation points in subgraphs of the graph.
-
-    Parameters
-    ----------
-    graphname : str
-        Refers to pre-computed graphs stored in folder, with the name being the
-        first element.
-    edgefilter : str (default="families")
-        Refers to second component of filename, thus, the component managing
-        how edges are created and defined (here: language families as a
-        default).
-    subgraph : str (default="infomap")
-        Determines the name of the subgraph that is used to pre-filter the
-        search for articulation points. Defaults to the infomap-algorithms.
-    threshold : int (default=1)
-        The threshold which was used to calculate the community detection
-        analaysis.
-
-    Note
-    ----
-    Method searches for articulation points inside partitions of the graph,
-    usually the partitions as provided by the infomap algorithm. The repository
-    stores graph data in different forms, as binary graph and as gml, and the
-    paramters are used to identify a given analysis by its filename and make
-    sure the correct graph is loaded.
-    """
-    args.api._log = args.log
-    threshold = args.threshold or 1
-
-    graph = args.api.load_graph('infomap', threshold, args.edgefilter)
-    for com, nodes in sorted(get_communities(graph).items(), key=lambda x: len(x), reverse=True):
-        if len(nodes) > 5:
-            subgraph = graph.subgraph(nodes)
-            degrees = subgraph.degree(list(subgraph.nodes()))
-            cnode = [a for a, b in sorted(degrees, key=lambda x: x[1], reverse=True)][0]
-            graph.node[cnode]['DegreeCentrality'] = 1
-            for artip in nx.articulation_points(subgraph):
-                graph.node[artip]['ArticulationPoint'] = \
-                    graph.node[artip].get('ArticulationPoint', 0) + 1
-                if bool(args.verbosity):
-                    print('{0}\t{1}\t{2}'.format(
-                        com, graph.node[cnode]['Gloss'], graph.node[artip]['Gloss']))
-
-    for node, data in graph.nodes(data=True):
-        data.setdefault('ArticulationPoint', 0)
-        data.setdefault('DegreeCentrality', 0)
-
-    args.api.save_graph(graph, 'articulationpoints', threshold, args.edgefilter)
-
-
-@command()
-def subgraph(args, neighbor_weight=None):
-    args.api._log = args.log
-    graphname = args.graphname or 'network'
-    threshold = args.threshold or 1
-    edgefilter = args.edgefilter
-    neighbor_weight = neighbor_weight or 5
-
-    _graph = args.api.load_graph(graphname, threshold, edgefilter)
-    for node, data in _graph.nodes(data=True):
-        generations = [{node}]
-        while generations[-1] and len(set.union(*generations)) < 30 and len(generations) < 3:
-            nextgen = set.union(*[set(_graph[n].keys()) for n in generations[-1]])
-            if len(nextgen) > 50:
-                break  # pragma: no cover
-            else:
-                generations.append(set.union(*[set(_graph[n].keys()) for n in generations[-1]]))
-        data['subgraph'] = list(set.union(*generations))
-
-    args.api.save_graph(_graph, 'subgraph', threshold, edgefilter)
-
-    outdir = args.api.existing_dir('app', 'subgraph', clean=True)
-    cluster_names = {}
-    nodes2cluster = {}
-    nidx = 1
-    for node, data in tqdm(
-            sorted(_graph.nodes(data=True), key=lambda x: len(x[1]['subgraph']), reverse=True),
-            leave=False):
-        nodes = tuple(sorted(data['subgraph']))
-        sg = _graph.subgraph(data['subgraph'])
-        if nodes not in nodes2cluster:
-            d_ = sorted(sg.degree(), key=lambda x: x[1], reverse=True)
-            d = [_graph.node[a]['Gloss'] for a, b in d_][0]
-            nodes2cluster[nodes] = 'subgraph_{0}_{1}'.format(nidx, d)
-            nidx += 1
-        cluster_name = nodes2cluster[nodes]
-        data['ClusterName'] = cluster_name
-        for n, d in sg.nodes(data=True):
-            d['OutEdge'] = []
-            neighbors = [
-                n_ for n_ in _graph if
-                n_ in _graph[node] and
-                _graph[node][n_]['FamilyWeight'] >= neighbor_weight and
-                n_ not in sg]
-            if neighbors:
-                sg.node[node]['OutEdge'] = []
-                for n_ in neighbors:
-                    sg.node[node]['OutEdge'].append([
-                        'subgraph_' + n_ + '_' + _graph.node[n]['Gloss'],
-                        _graph.node[n_]['Gloss'],
-                        _graph.node[n_]['Gloss'],
-                        _graph[node][n_]['FamilyWeight'],
-                        n_
-                    ])
-                    sg.node[node]['OutEdge'].append([
-                        _graph.node[n]['ClusterName'],
-                        _graph.node[n]['CentralConcept'],
-                        _graph.node[n]['Gloss'],
-                        _graph[node][n]['WordWeight'],
-                        n
-                    ])
-        if len(sg) > 1:
-            jsonlib.dump(
-                json_graph.adjacency_data(sg), outdir / (cluster_name + '.json'), sort_keys=True)
-            cluster_names[data['Gloss']] = cluster_name
-
-    for node, data in _graph.nodes(data=True):
-        if 'OutEdge' in data:
-            data['OutEdge'] = '//'.join([str(x) for x in data['OutEdge']])
-    args.api.write_js_var('SUBG', cluster_names, 'app', 'source', 'subgraph-names.js')
-
-
-@command()
-def communities(args, neighbor_weight=None):
-    graphname = args.graphname or 'network'
-    edge_weights = args.weight
-    vertex_weights = str('FamilyFrequency')
-    normalize = args.normalize
-    edgefilter = args.edgefilter
-    threshold = args.threshold or 1
-    neighbor_weight = neighbor_weight or 5
-
-    _graph = args.api.load_graph(graphname, threshold, edgefilter)
-    args.log.info('loaded graph')
-    for n, d in tqdm(_graph.nodes(data=True), desc='vertex-weights', leave=False):
-        d[vertex_weights] = int(d[vertex_weights])
-
-    if normalize:
-        for edgeA, edgeB, data in tqdm(_graph.edges(data=True), desc='normalizing', leave=False):
-            data[str('weight')] = data[edge_weights] ** 2 / (
-                _graph.node[edgeA][vertex_weights] +
-                _graph.node[edgeB][vertex_weights] -
-                data[edge_weights])
-        vertex_weights = None
-        edge_weights = 'weight'
-        args.log.info('computed weights')
-
-    graph = networkx2igraph(_graph)
-    args.log.info('converted graph')
-    args.log.info('starting infomap ...')
-
-    comps = graph.community_infomap(
-        edge_weights=str(edge_weights), vertex_weights=vertex_weights)
-
-    args.log.info('... finished infomap')
     D, Com = {}, defaultdict(list)
-    for i, comp in enumerate(sorted(comps.subgraphs(), key=lambda x: len(x.vs), reverse=True)):
-        for vertex in [v['name'] for v in comp.vs]:
-            D[graph.vs[vertex]['ConcepticonId']] = str(i + 1)
-            Com[i + 1].append(graph.vs[vertex]['ConcepticonId'])
+    for i, cluster in enumerate(clusters, start=1):
+        for vertex in cluster:
+            D[vertex] = str(i)
+            Com[i].append(vertex)
 
-    for node, data in _graph.nodes(data=True):
-        data['infomap'] = D[node]
-        data['ClusterName'] = ''
-        data['CentralConcept'] = ''
+    # Annotate the graph with the cluster info:
+    for node, data in graph.nodes(data=True):
+        data.update({algo: D.get(node, '0'), 'ClusterName': '', 'CentralConcept': ''})
 
     # get the articulation points etc. immediately
     for idx, nodes in sorted(Com.items()):
-        sg = _graph.subgraph(nodes)
+        sg = graph.subgraph(nodes)
         if len(sg) > 1:
             d_ = sorted(sg.degree(), key=lambda x: x[1], reverse=True)
-            d = [_graph.node[a]['Gloss'] for a, b in d_][0]
-            cluster_name = 'infomap_{0}_{1}'.format(idx, d)
+            d = [graph.node[a]['Gloss'] for a, b in d_][0]
+            cluster_name = '{0}_{1}_{2}'.format(algo, idx, d)
         else:
-            d = _graph.node[nodes[0]]['Gloss']
-            cluster_name = 'infomap_{0}_{1}'.format(idx, _graph.node[nodes[0]]['Gloss'])
-        args.log.debug(cluster_name, d)
+            d = graph.node[nodes[0]]['Gloss']
+            cluster_name = '{0}_{1}_{2}'.format(algo, idx, graph.node[nodes[0]]['Gloss'])
         for node in nodes:
-            _graph.node[node]['ClusterName'] = cluster_name
-            _graph.node[node]['CentralConcept'] = d
+            graph.node[node]['ClusterName'] = cluster_name
+            graph.node[node]['CentralConcept'] = d
 
     args.log.info('computed cluster names')
 
-    cluster_dir = args.api.existing_dir('app', 'cluster', clean=True)
+    cluster_dir = args.api.existing_dir('app', 'cluster', algo, clean=True)
     cluster_names = {}
     removed = []
     for idx, nodes in tqdm(sorted(Com.items()), desc='export to app', leave=False):
-        sg = _graph.subgraph(nodes)
+        sg = graph.subgraph(nodes)
         for node, data in sg.nodes(data=True):
             data['OutEdge'] = []
             neighbors = [
-                n for n in _graph if
-                n in _graph[node] and
-                _graph[node][n]['FamilyWeight'] >= neighbor_weight and
+                n for n in graph if
+                n in graph[node] and
+                graph[node][n]['FamilyWeight'] >= neighbor_weight and
                 n not in sg]
             if neighbors:
                 sg.node[node]['OutEdge'] = []
                 for n in neighbors:
                     sg.node[node]['OutEdge'].append([
-                        _graph.node[n]['ClusterName'],
-                        _graph.node[n]['CentralConcept'],
-                        _graph.node[n]['Gloss'],
-                        _graph[node][n]['WordWeight'],
+                        graph.node[n]['ClusterName'],
+                        graph.node[n]['CentralConcept'],
+                        graph.node[n]['Gloss'],
+                        graph[node][n]['WordWeight'],
                         n
                     ])
         if len(sg) > 1:
             jsonlib.dump(
                 json_graph.adjacency_data(sg),
-                cluster_dir / (_graph.node[nodes[0]]['ClusterName'] + '.json'),
+                cluster_dir / (graph.node[nodes[0]]['ClusterName'] + '.json'),
                 sort_keys=True)
             for node in nodes:
-                cluster_names[_graph.node[node]['Gloss']] = _graph.node[node]['ClusterName']
+                cluster_names[graph.node[node]['Gloss']] = graph.node[node]['ClusterName']
         else:
             removed += [list(nodes)[0]]
-    _graph.remove_nodes_from(removed)
-    for node, data in _graph.nodes(data=True):
+    graph.remove_nodes_from(removed)
+    for node, data in graph.nodes(data=True):
         if 'OutEdge' in data:
             data['OutEdge'] = '//'.join(['/'.join([str(y) for y in x]) for x in data['OutEdge']])
     removed = []
-    for nA, nB, data in tqdm(_graph.edges(data=True), desc='remove edges', leave=False):
-        if _graph.node[nA]['infomap'] != _graph.node[nB]['infomap'] and data['FamilyWeight'] < 5:
+    for nA, nB, data in tqdm(graph.edges(data=True), desc='remove edges', leave=False):
+        if graph.node[nA][algo] != graph.node[nB][algo] and data['FamilyWeight'] < 5:
             removed += [(nA, nB)]
-    _graph.remove_edges_from(removed)
+    graph.remove_edges_from(removed)
 
-    args.api.save_graph(_graph, 'infomap', threshold, edgefilter)
-    args.api.write_js_var('INFO', cluster_names, 'app', 'source', 'infomap-names.js')
+    args.api.save_graph(graph, algo, args.threshold, args.edgefilter)
+    args.api.write_js_var('INFO', cluster_names, 'app', 'source', '{0}-names.js'.format(algo))
 
 
 @command('graph-stats')
 def graph_stats(args):
-    graph = args.api.load_graph(args.graphname or 'network', args.threshold or 1, args.edgefilter)
+    graph = args.api.load_graph(args.graphname, args.threshold, args.edgefilter)
     print(tabulate([
         ['nodes', len(graph)],
         ['edges', len(graph.edges())],

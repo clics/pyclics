@@ -19,13 +19,13 @@ numpy.random.seed(123456)
 
 def main():  # pragma: no cover
     parser = ArgumentParserWithLogging(pyclics.__name__)
-    parser.add_argument('-t', '--threshold', type=int, default=None)
+
+    # The following three options are used to determine the graph name:
+    parser.add_argument('-t', '--threshold', type=int, default='1')
     parser.add_argument('-f', '--edgefilter', default='families')
-    parser.add_argument('-n', '--normalize', action='store_true')
-    parser.add_argument('-g', '--graphname', default=None)
-    parser.add_argument('-w', '--weight', default='FamilyWeight')
+    parser.add_argument('-g', '--graphname', default='network')
+
     parser.add_argument('--unloaded', action='store_true', default=False)
-    parser.add_argument('-v', '--verbose', default=False, action='store_true')
     parser.add_argument('-o', '--output', default=None, help='output directory')
     parser.add_argument('--api', help=argparse.SUPPRESS, default=Clics(Path('.')))
     args = parser.parse_args()

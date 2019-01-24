@@ -8,6 +8,7 @@ import pytest
 from pylexibank.dataset import Dataset
 
 from pyclics.db import Database
+from pyclics.plugin import clics_form
 
 
 @pytest.fixture
@@ -30,7 +31,7 @@ def dataset():
 @pytest.fixture(scope='session')
 def db(dataset):
     tmp = NamedTemporaryFile(delete=False)
-    db = Database(tmp.name)
+    db = Database(tmp.name, clics_form)
     db.create(exists_ok=True)
     db.load(dataset)
     with db.connection() as conn:

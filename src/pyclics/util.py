@@ -3,7 +3,7 @@ from collections import defaultdict
 
 import igraph
 
-__all__ = ['full_colexification', 'networkx2igraph']
+__all__ = ['networkx2igraph', 'get_communities', 'parse_kwargs']
 
 
 def networkx2igraph(graph):
@@ -31,27 +31,9 @@ def get_communities(graph, name='infomap'):
     return comms
 
 
-def full_colexification(forms):
-    """
-    Calculate all colexifications inside a wordlist.
-
-    :param forms: The forms of a wordlist.
-
-    :return: colexifictions, a dictionary taking the entries as keys and tuples
-        consisting of a concept and its index as values
-    :rtype: dict
-
-    Note
-    ----
-    Colexifications are identified using a hash (Python dictionary) and a
-    linear iteration through the graph. As a result, this approach is very
-    fast, yet the results are potentially a bit counter-intuitive, as they are
-    presented as a dictionary containing word values as keys. To get all
-    colexifications in sets, however, you can just take the values of the
-    dictionary.
-    """
-    cols = defaultdict(list)
-    for form in forms:
-        if form.clics_form and form.concepticon_id:
-            cols[form.clics_form].append(form)
-    return cols
+def parse_kwargs(*args):
+    res = {}
+    for arg in args:
+        name, _, value = arg.partition('=')
+        res[name] = value or None
+    return res
