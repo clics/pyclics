@@ -24,6 +24,7 @@ def repos(tmpdir):
 def dataset():
     class ClicsDataset(Dataset):
         dir = str(Path(__file__).parent / 'dataset')
+        id = 'td'
 
     return ClicsDataset()
 

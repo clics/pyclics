@@ -25,7 +25,7 @@ setup(
     python_requires='>=3.5',
     install_requires=[
         'attrs>=18.1',
-        'pylexibank>=0.7,<0.10',
+        'pylexibank>=1.1.1',
         'pyconcepticon',
         'pyglottolog',
         'clldutils~=2.0',
