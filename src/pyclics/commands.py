@@ -110,6 +110,7 @@ def load(args):
             if n:
                 args.log.info('purging {0} empty forms from db'.format(n))
                 conn.execute("DELETE " + from_clause)
+                conn.commit()
     args.log.info('loading Concepticon data')
     args.api.db.load_concepticon_data(Concepticon(str(concepticon)))
     args.log.info('loading Glottolog data')
