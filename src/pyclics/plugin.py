@@ -18,7 +18,8 @@ ALLOWED_CHARACTERS = string.ascii_letters + string.digits + '@'
 
 
 def clics_form(word):
-    return ''.join(c for c in unidecode(word) if c in ALLOWED_CHARACTERS).lower()
+    if word:
+        return ''.join(c for c in unidecode(word) if c in ALLOWED_CHARACTERS).lower()
 
 
 #
