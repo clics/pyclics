@@ -60,6 +60,10 @@ class Form(WithGid):
     ontological_category = attr.ib()
     semantic_field = attr.ib()
 
+    def __attrs_post_init__(self):
+        if not self.gloss:
+            self.gloss = self.concepticon_gloss
+
 
 @attr.s
 class Concept(object):
