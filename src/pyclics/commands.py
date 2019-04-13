@@ -106,11 +106,21 @@ def load(args):
         args.api.db.load(ds)
         with args.api.db.connection() as conn:
             from_clause = "FROM formtable WHERE form IS NULL"
+            conc_id_fix = "FROM parametertable WHERE Concepticon_ID = 0"
+
             n = args.api.db.fetchone("SELECT count(id) " + from_clause, conn=conn)[0]
+            c = args.api.db.fetchone("SELECT count(id) " + conc_id_fix, conn=conn)[0]
+
             if n:
                 args.log.info('purging {0} empty forms from db'.format(n))
                 conn.execute("DELETE " + from_clause)
                 conn.commit()
+
+            if c:
+                args.log.info('purging {0} problematic concepts from db.'.format(c))
+                conn.execute("DELETE " + conc_id_fix)
+                conn.commit()
+
     args.log.info('loading Concepticon data')
     args.api.db.load_concepticon_data(Concepticon(str(concepticon)))
     args.log.info('loading Glottolog data')
