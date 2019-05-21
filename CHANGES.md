@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 2.1 [in development]
+
+
 ## Version 2.0
 
 Plugin architecture (see `pyclics.plugin`) allowing

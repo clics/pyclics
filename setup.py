@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pyclics',
-    version='2.0.0',
+    version='2.0.1.dev0',
     description="creating colexification networks from lexical data",
     long_description=open("README.md").read(),
     long_description_content_type='text/markdown',
