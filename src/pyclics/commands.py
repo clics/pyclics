@@ -98,7 +98,13 @@ def load(args):
         interfaces.IClicsForm, args.api.clicsform))
     args.api.db.create(exists_ok=True)
     args.log.info('loading datasets into {0}'.format(args.api.db.fname))
-    in_db = args.api.db.datasets
+    try:
+        in_db = args.api.db.datasets
+    except (ValueError, sqlite3.OperationalError):
+        args.log.error('The existing database schema looks incompatible.')
+        args.log.error('You may re-load all datasets after first removing {0}.'.format(
+            args.api.db.fname))
+        return
     for ds in iter_datasets():
         if args.unloaded and ds.id in in_db:
             args.log.info('skipping {0} - already loaded'.format(ds.id))

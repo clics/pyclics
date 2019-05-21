@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import shutil
+import logging
 
 import pytest
 from clldutils.clilib import ParserError
@@ -17,7 +18,7 @@ def api(repos, db):
     return Clics(str(repos))
 
 
-def test_load(mocker, tmpdir, repos, dataset):
+def test_load(mocker, tmpdir, repos, dataset, caplog):
     with pytest.raises(ParserError):
         commands.load(mocker.Mock(args=[]))
     with pytest.raises(ParserError):
@@ -29,6 +30,10 @@ def test_load(mocker, tmpdir, repos, dataset):
     mocker.patch('pyclics.commands.iter_datasets', lambda: [dataset])
     commands.load(mocker.Mock(args=[str(repos), str(repos)], api=api))
     commands.load(mocker.Mock(args=[str(repos), str(repos)], api=api, unloaded=True))
+
+    api.db.fname.write_bytes(b'')
+    commands.load(mocker.Mock(args=[str(repos), str(repos)], api=api, log=logging.getLogger()))
+    assert 'removing' in caplog.text
 
 
 def test_list(api, mocker, capsys):
