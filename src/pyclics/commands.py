@@ -22,9 +22,9 @@ from pyclics import interfaces
 
 @command('datasets')
 def list_(args):
-    """List datasets available for loading
+    """List datasets available for loading or already loaded.
 
-    clics --lexibank-repos=PATH/TO/lexibank-data list
+    clics [--unloaded] list
     """
     if args.unloaded:
         i = 0
@@ -81,7 +81,8 @@ where
 
 @command()
 def load(args):
-    """
+    """Load installed datasets into the CLICS sqlite DB
+
     clics load /path/to/concepticon-data /path/to/glottolog
     """
     if len(args.args) != 2:
@@ -130,6 +131,10 @@ def load(args):
 
 @command()
 def colexification(args):
+    """Compute the colexification graph
+
+    clics colexification
+    """
     args.api._log = args.log
     words = {}
 
@@ -220,7 +225,12 @@ def colexification(args):
 
 @command()
 def cluster(args):
-    """cluster """
+    """Cluster the colexification graph using one of the installed cluster algorithms.
+
+    clics cluster CLUSTER_ALGORITHM
+
+Run "clics cluster list" for a linst of available cluster algorithms.
+    """
     from pyclics.util import parse_kwargs
 
     algo = args.args[0]
@@ -315,6 +325,10 @@ def cluster(args):
 
 @command('graph-stats')
 def graph_stats(args):
+    """Display summary statistics about a colexification graph.
+
+    clics graph-stats
+    """
     graph = args.api.load_graph(args.graphname, args.threshold, args.edgefilter)
     print(tabulate([
         ['nodes', len(graph)],
