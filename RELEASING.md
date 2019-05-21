@@ -18,6 +18,8 @@ flake8 src/
   - setup.py
   - src/pyclics/__init__.py
 
+- Describe changes in `CHANGES.md`.
+
 - Commit your change of the version number:
 ```shell
 git commit -a -m "release <VERSION>"
