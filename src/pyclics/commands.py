@@ -34,7 +34,7 @@ def list_(args):
             print('No datasets installed')  # pragma: no cover
     else:
         table = Table(
-            '#', 'Dataset', 'Glosses', 'Concepticon', 'Varieties', 'Glottocodes', 'Families')
+            '#', 'Dataset', 'Parameters', 'Concepticon', 'Varieties', 'Glottocodes', 'Families')
         try:
             concept_counts = {r[0]: r[1:] for r in args.api.db.fetchall('concepts_by_dataset')}
         except sqlite3.OperationalError:  # pragma: no cover
@@ -113,7 +113,7 @@ def load(args):
         args.api.db.load(ds)
         with args.api.db.connection() as conn:
             from_clause = "FROM formtable WHERE form IS NULL"
-            conc_id_fix = "FROM parametertable WHERE Concepticon_ID = 0"
+            conc_id_fix = "FROM parametertable WHERE Concepticon_ID IS NULL"
 
             n = args.api.db.fetchone("SELECT count(id) " + from_clause, conn=conn)[0]
             c = args.api.db.fetchone("SELECT count(id) " + conc_id_fix, conn=conn)[0]

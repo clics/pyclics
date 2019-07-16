@@ -21,7 +21,7 @@ class Database(Database_):
     """
     Database_.sql["concepts_by_dataset"] = """\
 SELECT
-    ds.id, count(distinct p.concepticon_id), count(distinct p.name)
+    ds.id, count(distinct p.concepticon_id), count(distinct p.id)
 FROM
     dataset as ds, parametertable as p, formtable as f
 WHERE
