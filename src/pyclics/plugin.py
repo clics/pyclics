@@ -8,7 +8,7 @@ import string
 from unidecode import unidecode
 from tqdm import tqdm
 
-from pyclics.util import networkx2igraph
+from pyclics.util import networkx2igraph, iter_subgraphs
 
 #
 # Computation of the CLICS form of a lexeme:
@@ -57,16 +57,7 @@ def full_colexification(forms):
 def subgraph(graph, kw):
     all_nodes = {n for n in graph.nodes}
     all_edges = {tuple(sorted(e, key=lambda i: int(i))) for e in graph.edges()}
-    subgraphs = []
-    for node, data in graph.nodes(data=True):
-        generations = [{node}]
-        while generations[-1] and len(set.union(*generations)) < 30 and len(generations) < 3:
-            nextgen = set.union(*[set(graph[n].keys()) for n in generations[-1]])
-            if len(nextgen) > 50:
-                break  # pragma: no cover
-            else:
-                generations.append(set.union(*[set(graph[n].keys()) for n in generations[-1]]))
-        subgraphs.append(list(set.union(*generations)))
+    subgraphs = [sg for _, sg in iter_subgraphs(graph)]
 
     # Iterate over subgraphs by descending number of nodes:
     for sg in sorted(subgraphs, key=lambda i: len(i), reverse=True):
@@ -75,6 +66,9 @@ def subgraph(graph, kw):
         all_nodes -= set(sg)
         all_edges -= set(itertools.combinations(sorted(sg, key=lambda i: int(i)), 2))
         yield sg
+    else:
+        if all_nodes:
+            raise ValueError('unclustered nodes: {0}'.format(all_nodes))
 
 
 def infomap(graph, kw):

@@ -307,9 +307,14 @@ Run "clics cluster list" for a linst of available cluster algorithms.
                         n
                     ])
         if len(sg) > 1:
+            fn = cluster_dir / ((str(idx) if algo == 'subgraph' else graph.node[nodes[0]]['ClusterName']) + '.json')
+            ad = json_graph.adjacency_data(sg)
+            if '12' in sg:
+                print(fn)
+                assert '12' in [n['ID'] for n in ad['nodes']]
             jsonlib.dump(
-                json_graph.adjacency_data(sg),
-                cluster_dir / (graph.node[nodes[0]]['ClusterName'] + '.json'),
+                ad,
+                fn,
                 sort_keys=True)
             for node in nodes:
                 cluster_names[graph.node[node]['Gloss']] = graph.node[node]['ClusterName']
@@ -342,3 +347,66 @@ def graph_stats(args):
         ['components', len(list(nx.connected_components(graph)))],
         ['communities', len(get_communities(graph))]
     ]))
+
+
+@command('geojson')
+def geojson_(args):
+    from geojson import FeatureCollection, Feature, Point, dumps
+    from clldutils.misc import nfilter
+    from clldutils.path import write_text
+    from clld.lib.color import qualitative_colors
+
+    languoids = {l.id: l for l in Glottolog(args.args[0]).languoids()}
+    l2point = {}
+    for l in languoids.values():
+        if l.latitude is not None:
+            l2point[l.id] = Point((l.longitude, l.latitude))
+
+    for l in languoids.values():
+        if l.id not in l2point and l.level.name == 'dialect':
+            for _, gc, _ in reversed(l.lineage):
+                if gc in l2point:
+                    l2point[l.id] = l2point[gc]
+
+    def valid_languoid(gc):
+        if gc in l2point:
+            return languoids[gc]
+
+    langs_by_family, isolates = {}, []
+    for family, langs in groupby(
+        args.api.db.fetchall("select id, glottocode, family from languagetable order by family"),
+        lambda r: r[2],
+    ):
+        langs = nfilter([valid_languoid(gc) for gc in set(l[1] for l in langs)])
+        if family:
+            langs_by_family[family] = langs
+        else:
+            isolates = langs
+
+    colors = qualitative_colors(len(langs_by_family) + len(isolates))
+
+    def feature(l, color):
+        if l.level.name == 'dialect':
+            fam = 'dialect'
+        else:
+            fam = languoids[l.lineage[0][1]].name if l.lineage else 'isolate'
+        return Feature(
+            id=l.id,
+            geometry=l2point[l.id],
+            properties={
+                'title': '{0} [{1}]'.format(l.name, fam),
+                'fill-opacity': 0.5,
+                'marker-size': 'small',
+                'marker-color': color},
+        )
+
+    features, i = [], 0
+    for i, (fam, langs) in enumerate(
+            sorted(langs_by_family.items(), key=lambda i: (-len(i[1]), i[0]))):
+        for lang in langs:
+            features.append(feature(lang, colors[i]))
+
+    for j, lang in enumerate(isolates):
+        features.append(feature(lang, colors[i + j + 1]))
+
+    write_text(args.api.repos / 'languoids.geojson', dumps(FeatureCollection(features), indent=4))
