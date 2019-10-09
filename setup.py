@@ -28,7 +28,7 @@ setup(
         'attrs>=18.1',
         'pylexibank>=1.1.1',
         'pyconcepticon',
-        'pyglottolog~=1.0',
+        'pyglottolog>=2.0',
         'clldutils~=2.0',
         'geojson',
         'python-igraph>=0.7.1',
