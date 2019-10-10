@@ -15,6 +15,7 @@ from pyclics.plugin import clics_form
 def repos(tmpdir):
     gl = tmpdir.mkdir('languoids')
     gl.mkdir('tree')
+    tmpdir.mkdir('references')
     concepticon = tmpdir.mkdir('concepticondata')
     concepticon.join('concepticon.tsv').write('')
     return Path(str(tmpdir))
