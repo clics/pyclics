@@ -96,7 +96,7 @@ class Network(object):
     graphname = attr.ib()
     threshold = attr.ib()
     edgefilter = attr.ib()
-    graphdir = attr.ib(convert=lambda s: Path(str(s)))
+    graphdir = attr.ib(converter=lambda s: Path(str(s)))
 
     @property
     def fname(self):
