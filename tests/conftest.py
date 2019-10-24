@@ -1,6 +1,3 @@
-# coding: utf8
-from __future__ import unicode_literals, print_function, division
-import os
 from tempfile import NamedTemporaryFile
 from pathlib import Path
 
@@ -15,6 +12,7 @@ from pyclics.plugin import clics_form
 def repos(tmpdir):
     gl = tmpdir.mkdir('languoids')
     gl.mkdir('tree')
+    tmpdir.mkdir('references')
     concepticon = tmpdir.mkdir('concepticondata')
     concepticon.join('concepticon.tsv').write('')
     return Path(str(tmpdir))
@@ -45,4 +43,4 @@ update ParameterTable set
     semantic_field = 'sf'""")
         conn.commit()
     yield db
-    os.remove(tmp.name)
+    Path(tmp.name).unlink()
