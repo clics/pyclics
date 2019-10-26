@@ -11,7 +11,7 @@ from clldutils.markup import Table
 from clldutils import jsonlib
 from pyconcepticon.api import Concepticon
 from pyglottolog.api import Glottolog
-from pylexibank.dataset import iter_datasets
+from cldfbench import iter_datasets
 import networkx as nx
 from networkx.readwrite import json_graph
 from tabulate import tabulate
@@ -28,7 +28,7 @@ def list_(args):
     """
     if args.unloaded:
         i = 0
-        for i, ds in enumerate(iter_datasets()):
+        for i, ds in enumerate(iter_datasets('lexibank.dataset')):
             print(ds.cldf_dir)
         if not i:
             print('No datasets installed')  # pragma: no cover

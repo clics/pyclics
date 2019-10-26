@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pyclics',
-    version='2.0.1.dev0',
+    version='2.1.0.dev0',
     description="creating colexification networks from lexical data",
     long_description=open("README.md").read(),
     long_description_content_type='text/markdown',
@@ -26,9 +26,9 @@ setup(
     python_requires='>=3.5',
     install_requires=[
         'attrs>=18.1',
-        'pylexibank>=1.1.1',
-        'pyconcepticon',
-        'clldutils>=2.0',
+        'pylexibank>=2.0',
+        'pyconcepticon>=2.2',
+        'clldutils>=3.2',
         'pyglottolog>=2.0',
         'geojson',
         'python-igraph>=0.7.1',
