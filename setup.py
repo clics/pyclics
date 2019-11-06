@@ -32,7 +32,7 @@ setup(
         'pyglottolog>=2.0',
         'geojson',
         'python-igraph>=0.7.1',
-        'networkx',
+        'networkx==2.1',  # We rely on the `node` attribute
         'unidecode',
         'zope.component',
         'zope.interface',
