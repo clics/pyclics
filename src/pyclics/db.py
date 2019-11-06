@@ -56,6 +56,7 @@ GROUP BY ds.id"""
     @property
     def varieties(self):
         return [Variety(*row) for row in self.fetchall("""\
+select * from (
 select
     l.id, l.dataset_id, l.name, l.glottocode, l.family, l.macroarea, l.longitude, l.latitude
 from
@@ -63,13 +64,13 @@ from
 where
     l.glottocode is not null
     and l.family != 'Bookkeeping'
-    and exists (
-        select 1 from formtable as f where f.language_id = l.id and f.dataset_id = l.dataset_id
-    )
 group by
     l.id, l.dataset_id
 order by
-    l.dataset_id, l.id""")]
+    l.dataset_id, l.id
+)
+where id in (select distinct language_id from formtable);
+    """)]
 
     def iter_wordlists(self, varieties):
         languages = {(v.source, v.id): v for v in varieties}

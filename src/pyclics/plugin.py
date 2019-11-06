@@ -62,12 +62,13 @@ def subgraph(graph, kw):
     # Iterate over subgraphs by descending number of nodes:
     for sg in sorted(subgraphs, key=lambda i: len(i), reverse=True):
         if (not all_nodes) and (not all_edges):
-            break
+            # all nodes and edges are included in at least one subgraph
+            break  # pragma: no cover
         all_nodes -= set(sg)
         all_edges -= set(itertools.combinations(sorted(sg, key=lambda i: int(i)), 2))
         yield sg
     else:
-        if all_nodes:
+        if all_nodes:  # pragma: no cover
             raise ValueError('unclustered nodes: {0}'.format(all_nodes))
 
 

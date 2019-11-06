@@ -1,4 +1,5 @@
 import json
+import collections
 import pkg_resources
 
 from clldutils.apilib import API
@@ -51,10 +52,10 @@ class Clics(API):
 
     @lazyproperty
     def cluster_algorithms(self):
-        res = []
+        res = collections.OrderedDict()
         for util in self.gsm.registeredUtilities():
             if util.provided == interfaces.IClusterer:
-                res.append(util.name)
+                res[util.name] = self.get_clusterer(util.name).__doc__
         return res
 
     def get_clusterer(self, name):

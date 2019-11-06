@@ -1,8 +1,21 @@
+import argparse
 from collections import defaultdict
 
+from cldfcatalog import Config
+from cldfbench.catalogs import Glottolog, Concepticon
 import igraph
 
 __all__ = ['networkx2igraph', 'get_communities', 'parse_kwargs']
+
+CATALOGS = {'glottolog': Glottolog, 'concepticon': Concepticon}
+
+
+def catalog(name, args):
+    repos = getattr(args, name) or Config.from_file().get_clone(name)
+    if not repos:  # pragma: no cover
+        raise argparse.ArgumentError(
+            None, 'No repository specified for {0} and no config found'.format(name))
+    return CATALOGS[name](repos, getattr(args, name + '_version'))
 
 
 def networkx2igraph(graph):
