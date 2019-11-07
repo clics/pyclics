@@ -1,11 +1,10 @@
-# coding: utf8
-from __future__ import unicode_literals, print_function, division
-import os
 from tempfile import NamedTemporaryFile
 from pathlib import Path
+import shutil
 
 import pytest
 from pylexibank.dataset import Dataset
+import cldfcatalog.repository
 
 from pyclics.db import Database
 from pyclics.plugin import clics_form
@@ -13,12 +12,26 @@ from pyclics.plugin import clics_form
 
 @pytest.fixture
 def repos(tmpdir):
-    gl = tmpdir.mkdir('languoids')
-    gl.mkdir('tree')
-    tmpdir.mkdir('references')
-    concepticon = tmpdir.mkdir('concepticondata')
-    concepticon.join('concepticon.tsv').write('')
     return Path(str(tmpdir))
+
+
+def _make_repos(name, tmpdir):
+    gl = Path(str(tmpdir.join(name)))
+    shutil.copytree(cldfcatalog.repository.get_test_repo(str(tmpdir)).working_dir, str(gl))
+    for d in Path(__file__).parent.joinpath(name).iterdir():
+        if d.is_dir():
+            shutil.copytree(str(d), str(gl / d.name))
+    return str(gl)
+
+
+@pytest.fixture
+def glottolog(tmpdir):
+    return _make_repos('glottolog', tmpdir)
+
+
+@pytest.fixture
+def concepticon(tmpdir):
+    return _make_repos('concepticon', tmpdir)
 
 
 @pytest.fixture(scope='session')
@@ -46,4 +59,4 @@ update ParameterTable set
     semantic_field = 'sf'""")
         conn.commit()
     yield db
-    os.remove(tmp.name)
+    Path(tmp.name).unlink()
