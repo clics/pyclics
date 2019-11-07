@@ -44,12 +44,18 @@ def test_load(mocker, glottolog, concepticon, dataset, _main, caplog):
     _main('geojson', '--glottolog', glottolog)
 
 
-def test_datasets(capsys, _main):
+def test_datasets(capsys, _main, mocker, dataset, glottolog, concepticon):
     _main('datasets', '--unloaded')
     _, _ = capsys.readouterr()
 
-    _main('datasets')
-    out, err = capsys.readouterr()
+    mocker.patch('pyclics.commands.load.iter_datasets', lambda **kw: [dataset])
+    _main(
+        'load', '--glottolog', glottolog, '--concepticon', concepticon,
+        log=logging.getLogger(__name__))
+    _main('datasets', log=logging.getLogger(__name__))
+    out, _ = capsys.readouterr()
+    assert ['1', 'td', '498', '498', '5', '1', '1'] in [
+        line.strip().split() for line in out.splitlines()]
 
 
 def test_cluster_algos(capsys, _main):

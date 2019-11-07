@@ -42,16 +42,18 @@ def run(args):
             var_counts[dsid] = (
                 len(vs), len(set(v.glottocode for v in vs)), len(set(v.family for v in vs)))
 
+        print(var_counts)
+
         for count, d in enumerate(args.repos.db.datasets):
             table.append([
                 count + 1,
                 d.replace('lexibank-', ''),
                 concept_counts[d][1],
                 concept_counts[d][0],
-                var_counts[d][0],
-                var_counts[d][1],
-                var_counts[d][2],
-                ])
+                var_counts.get(d, [0])[0],
+                var_counts.get(d, [0, 0])[1],
+                var_counts.get(d, [0, 0, 0])[2],
+            ])
         table.append([
             '',
             'TOTAL',

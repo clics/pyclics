@@ -26,7 +26,7 @@ def run(args):
 
     for l in languoids.values():
         if l.id not in l2point and l.level.name == 'dialect':
-            for _, gc, _ in reversed(l.lineage):
+            for _, gc, _ in reversed(l.lineage):  # pragma: no cover
                 if gc in l2point:
                     l2point[l.id] = l2point[gc]
 
@@ -49,7 +49,7 @@ def run(args):
 
     def feature(l, color):
         if l.level.name == 'dialect':
-            fam = 'dialect'
+            fam = 'dialect'  # pragma: no cover
         else:
             fam = languoids[l.lineage[0][1]].name if l.lineage else 'isolate'
         return Feature(
@@ -68,7 +68,7 @@ def run(args):
         for lang in langs:
             features.append(feature(lang, colors[i]))
 
-    for j, lang in enumerate(isolates):
+    for j, lang in enumerate(isolates):  # pragma: no cover
         features.append(feature(lang, colors[i + j + 1]))
 
     (args.api.repos / 'languoids.geojson').write_text(
