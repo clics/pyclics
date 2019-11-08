@@ -42,8 +42,6 @@ def run(args):
             var_counts[dsid] = (
                 len(vs), len(set(v.glottocode for v in vs)), len(set(v.family for v in vs)))
 
-        print(var_counts)
-
         for count, d in enumerate(args.repos.db.datasets):
             table.append([
                 count + 1,
