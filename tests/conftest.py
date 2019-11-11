@@ -3,6 +3,7 @@ from pathlib import Path
 import shutil
 
 import pytest
+from networkx import Graph
 from pylexibank.dataset import Dataset
 import cldfcatalog.repository
 
@@ -41,6 +42,15 @@ def dataset():
         id = 'td'
 
     return ClicsDataset()
+
+
+@pytest.fixture
+def graph():
+    g = Graph()
+    g.add_node(1)
+    g.add_node(2)
+    g.add_edge(1, 2)
+    return g
 
 
 @pytest.fixture(scope='session')

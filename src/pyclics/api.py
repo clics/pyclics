@@ -12,6 +12,7 @@ from pyclics.db import Database
 from pyclics.models import Network
 from pyclics import interfaces
 from pyclics import plugin
+from pyclics.util import iter_subgraphs
 
 __all__ = ['Clics']
 
@@ -119,3 +120,6 @@ class Clics(API):
 
     def load_graph(self, network, threshold, edgefilter):
         return Network(network, threshold, edgefilter, self.graph_dir).graph
+
+    def iter_subgraphs(self, network, threshold, edgefilter):
+        return iter_subgraphs(self.load_graph(network, threshold, edgefilter))

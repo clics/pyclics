@@ -10,6 +10,14 @@ def api(tmpdir, mocker):
     return res
 
 
+def test_iter_subgraphs(api, graph, mocker):
+    class Network:
+        def __init__(self, *args, **kw):
+            self.graph = graph
+    mocker.patch('pyclics.api.Network', Network)
+    assert list(api.iter_subgraphs(None, None, None))
+
+
 def test_csv_writer(api):
     with api.csv_writer('test', 'test') as w:
         w.writerows([['a', 'b', 'c'], [1, 2, 3]])
