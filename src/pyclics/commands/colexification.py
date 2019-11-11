@@ -3,9 +3,7 @@ Compute the colexification graph
 """
 import shutil
 from pathlib import Path
-from itertools import combinations
 
-from tqdm import tqdm
 import networkx as nx
 import geojson
 from clldutils.clilib import Table, add_format
@@ -22,19 +20,19 @@ def register(parser):
 
 def run(args):
     args.repos._log = args.log
-    words = {}
+    #words = {}
 
     def clean(word):
         return ''.join([w for w in word if w not in '/,;"'])
 
     varieties = args.repos.db.varieties
-    lgeo = geojson.FeatureCollection([v.as_geojson() for v in varieties])
-    args.repos.json_dump(lgeo, 'app', 'source', 'langsGeo.json')
+    #lgeo = geojson.FeatureCollection([v.as_geojson() for v in varieties])
+    #args.repos.json_dump(lgeo, 'app', 'source', 'langsGeo.json')
 
-    app_source = args.repos.existing_dir('app', 'source')
-    for p in Path(__file__).parent.parent.joinpath('app').iterdir():
-        target_dir = app_source.parent if p.suffix == '.html' else app_source
-        shutil.copy(str(p), str(target_dir / p.name))
+    #app_source = args.repos.existing_dir('app', 'source')
+    #for p in Path(__file__).parent.parent.joinpath('app').iterdir():
+    #    target_dir = app_source.parent if p.suffix == '.html' else app_source
+    #    shutil.copy(str(p), str(target_dir / p.name))
 
     args.log.info('Adding nodes to the graph')
     G = nx.Graph()
@@ -42,35 +40,31 @@ def run(args):
         G.add_node(concept.id, **concept.as_node_attrs())
 
     args.log.info('Adding edges to the graph')
-    for v_, forms in tqdm(args.repos.db.iter_wordlists(varieties), total=len(varieties), leave=False):
-        for v in args.repos.colexifier(forms):
-            for formA, formB in combinations(v, r=2):
-                # check for identical concept resulting from word-variants
-                if formA.concepticon_id != formB.concepticon_id:
-                    words[formA.gid] = [formA.clics_form, formA.form]
-                    if not G[formA.concepticon_id].get(formB.concepticon_id, False):
-                        G.add_edge(
-                            formA.concepticon_id,
-                            formB.concepticon_id,
-                            words=set(),
-                            languages=set(),
-                            families=set(),
-                            wofam=[],
-                        )
+    for v_, formA, formB in args.repos.iter_colexifications(varieties):
+        #words[formA.gid] = [formA.clics_form, formA.form]
+        if not G[formA.concepticon_id].get(formB.concepticon_id, False):
+            G.add_edge(
+                formA.concepticon_id,
+                formB.concepticon_id,
+                words=set(),
+                languages=set(),
+                families=set(),
+                wofam=[],
+            )
 
-                    G[formA.concepticon_id][formB.concepticon_id]['words'].add(
-                        (formA.gid, formB.gid))
-                    G[formA.concepticon_id][formB.concepticon_id]['languages'].add(v_.gid)
-                    G[formA.concepticon_id][formB.concepticon_id]['families'].add(v_.family)
-                    G[formA.concepticon_id][formB.concepticon_id]['wofam'].append('/'.join([
-                        formA.gid,
-                        formB.gid,
-                        formA.clics_form,
-                        v_.gid,
-                        v_.family,
-                        clean(formA.form),
-                        clean(formB.form)]))
-    args.repos.json_dump(words, 'app', 'source', 'words.json')
+        G[formA.concepticon_id][formB.concepticon_id]['words'].add(
+            (formA.gid, formB.gid))
+        G[formA.concepticon_id][formB.concepticon_id]['languages'].add(v_.gid)
+        G[formA.concepticon_id][formB.concepticon_id]['families'].add(v_.family)
+        G[formA.concepticon_id][formB.concepticon_id]['wofam'].append('/'.join([
+            formA.gid,
+            formB.gid,
+            formA.clics_form,
+            v_.gid,
+            v_.family,
+            clean(formA.form),
+            clean(formB.form)]))
+    #args.repos.json_dump(words, 'app', 'source', 'words.json')
 
     edges = {}
     for edgeA, edgeB, data in G.edges(data=True):

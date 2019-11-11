@@ -74,6 +74,11 @@ def test_workflow(api, mocker, capsys, _main):
     out, err = capsys.readouterr()
     assert 'Concept B' in out
 
+    with pytest.raises(SystemExit):
+        _main('cluster', 'infomap')
+
+    _main('makeapp', 'infomap[weight=FamilyWeight]')
+
     _main('cluster', 'infomap')
     # test overwriting:
     _main('cluster', 'infomap')

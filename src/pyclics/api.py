@@ -1,4 +1,5 @@
 import json
+import itertools
 import collections
 import pkg_resources
 
@@ -7,6 +8,7 @@ from clldutils.misc import lazyproperty
 from clldutils import jsonlib
 from csvw.dsv import UnicodeWriter
 from zope.component import getGlobalSiteManager, getUtility
+from tqdm import tqdm
 
 from pyclics.db import Database
 from pyclics.models import Network
@@ -123,3 +125,12 @@ class Clics(API):
 
     def iter_subgraphs(self, network, threshold, edgefilter):
         return iter_subgraphs(self.load_graph(network, threshold, edgefilter))
+
+    def iter_colexifications(self, varieties=None):
+        varieties = varieties or self.db.varieties
+        for v_, forms in tqdm(self.db.iter_wordlists(varieties), total=len(varieties), leave=False):
+            for v in self.colexifier(forms):
+                for formA, formB in itertools.combinations(v, r=2):
+                    # check for identical concept resulting from word-variants
+                    if formA.concepticon_id != formB.concepticon_id:
+                        yield v_, formA, formB

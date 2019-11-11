@@ -1,8 +1,8 @@
-"""Cluster the colexification graph using one of the installed cluster algorithms.
+"""
+Cluster the colexification graph using one of the installed cluster algorithms.
+Note: You must run "clics makeapp" before running this, to setup the scaffolding for the app.
 
-clics cluster CLUSTER_ALGORITHM
-
-Run "clics cluster list" for a linst of available cluster algorithms.
+Run "clics cluster _" for a list of available cluster algorithms.
 """
 import collections
 import argparse
@@ -39,6 +39,9 @@ def run(args):
         if args.algorithm != '_':
             raise argparse.ArgumentError(None, 'Unknown cluster algorithm: {0}'.format(algo))
         return
+
+    if not args.repos.repos.joinpath('app', 'source', 'words.json').exists():
+        raise argparse.ArgumentError(None, '"clics makeapp" must be run first')
 
     graph = args.repos.load_graph(args.graphname, args.threshold, args.edgefilter)
     args.log.info('graph loaded')
