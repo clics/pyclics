@@ -8,7 +8,8 @@ import attr
 import requests
 from clldutils.markup import Table
 
-URL = "https://zenodo.org/oai2d?verb=ListRecords&set=user-clics&metadataPrefix=oai_dc"
+BASE_URL = "https://zenodo.org/oai2d?verb=ListRecords"
+URL = BASE_URL + "&set=user-clics&metadataPrefix=oai_dc"
 REQ_PATTERN = re.compile("https://github.com/(?P<repos>[^/]+/[^.]+).git@(?P<tag>v[0-9.]+)#")
 TAG_PATTERN = re.compile("https://github.com/[^/]+/[^/]+/tree/(?P<tag>[a-zA-Z0-9.]+)")
 
@@ -34,10 +35,14 @@ class OAIRecord:  # pragma: no cover
 
     @property
     def repos(self):
+        if 'lexirumah' in self.title.lower():
+            return 'lessersunda/lexirumah-data'
         return self.title.split(':')[0]
 
     @property
     def tag(self):
+        if 'lexirumah' in self.title.lower():
+            return re.search('(?P<tag>v[0-9.]+)', self.title).group('tag')
         for rel in self.relations:
             m = TAG_PATTERN.search(rel)
             if m:
@@ -50,6 +55,18 @@ class OAIRecord:  # pragma: no cover
             self.doi)
 
 
+def iter_records():
+    url = URL
+    while url:
+        recs = ElementTree.fromstring(requests.get(url).text)
+        for rec in recs.findall('.//{http://www.openarchives.org/OAI/2.0/}record'):
+            yield OAIRecord.from_oai(rec)
+        rt = recs.find('.//{http://www.openarchives.org/OAI/2.0/}resumptionToken')
+        if rt is None or not rt.text:
+            break
+        url = BASE_URL + '&resumptionToken=' + rt.text
+
+
 def run(args):  # pragma: no cover
     # Read datasets.txt:
     datasets = {}
@@ -60,11 +77,7 @@ def run(args):  # pragma: no cover
         datasets[m.group('repos')] = m.group('tag')
 
     # Read what's on Zenodo:
-    records = {}
-    recs = ElementTree.fromstring(requests.get(URL).text)
-    for rec in recs.findall('.//{http://www.openarchives.org/OAI/2.0/}record'):
-        rec = OAIRecord.from_oai(rec)
-        records[rec.repos, rec.tag] = rec
+    records = {(rec.repos, rec.tag): rec for rec in iter_records()}
 
     table = Table('#', 'Title', 'DOI')
     for i, spec in enumerate(sorted(datasets.items()), start=1):
