@@ -73,6 +73,9 @@ where id in (select distinct language_id from formtable);
     """)]
 
     def iter_wordlists(self, varieties):
+        """
+        :return: Generator of (wordlist, forms) pairs, where forms are ordered by `clics_form`.
+        """
         languages = {(v.source, v.id): v for v in varieties}
         for (dsid, vid), v in sorted(languages.items()):
             forms = [Form(*row) for row in self.fetchall("""
@@ -88,7 +91,7 @@ where
     and f.language_id = ?
     and f.dataset_id = ?
 order by
-    f.dataset_id, f.language_id, p.concepticon_id
+    f.clics_form, p.concepticon_id
 """, params=(vid, dsid))]
             assert forms
             yield v, forms
