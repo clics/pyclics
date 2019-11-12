@@ -27,8 +27,16 @@ def run(args):
             print('No datasets installed')  # pragma: no cover
         return
 
-    with Table(args,
-            '#', 'Dataset', 'Parameters', 'Concepticon', 'Varieties', 'Glottocodes', 'Families') as table:
+    with Table(
+            args,
+            '#',
+            'Dataset',
+            'Parameters',
+            'Concepticon',
+            'Varieties',
+            'Glottocodes',
+            'Families',
+    ) as table:
         try:
             concept_counts = {r[0]: r[1:] for r in args.repos.db.fetchall('concepts_by_dataset')}
         except sqlite3.OperationalError:  # pragma: no cover

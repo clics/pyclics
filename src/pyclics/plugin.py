@@ -2,7 +2,6 @@
 Pluggable functionality for CLICS
 """
 import itertools
-from collections import defaultdict
 import string
 
 from unidecode import unidecode

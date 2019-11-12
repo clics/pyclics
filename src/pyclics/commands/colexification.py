@@ -1,11 +1,7 @@
 """
 Compute the colexification graph
 """
-import shutil
-from pathlib import Path
-
 import networkx as nx
-import geojson
 from clldutils.clilib import Table, add_format
 
 
@@ -20,19 +16,11 @@ def register(parser):
 
 def run(args):
     args.repos._log = args.log
-    #words = {}
 
     def clean(word):
         return ''.join([w for w in word if w not in '/,;"'])
 
     varieties = args.repos.db.varieties
-    #lgeo = geojson.FeatureCollection([v.as_geojson() for v in varieties])
-    #args.repos.json_dump(lgeo, 'app', 'source', 'langsGeo.json')
-
-    #app_source = args.repos.existing_dir('app', 'source')
-    #for p in Path(__file__).parent.parent.joinpath('app').iterdir():
-    #    target_dir = app_source.parent if p.suffix == '.html' else app_source
-    #    shutil.copy(str(p), str(target_dir / p.name))
 
     args.log.info('Adding nodes to the graph')
     G = nx.Graph()
@@ -41,7 +29,6 @@ def run(args):
 
     args.log.info('Adding edges to the graph')
     for v_, formA, formB in args.repos.iter_colexifications(varieties):
-        #words[formA.gid] = [formA.clics_form, formA.form]
         if not G[formA.concepticon_id].get(formB.concepticon_id, False):
             G.add_edge(
                 formA.concepticon_id,
@@ -64,7 +51,6 @@ def run(args):
             v_.family,
             clean(formA.form),
             clean(formB.form)]))
-    #args.repos.json_dump(words, 'app', 'source', 'words.json')
 
     edges = {}
     for edgeA, edgeB, data in G.edges(data=True):

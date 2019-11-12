@@ -61,10 +61,12 @@ def iter_subgraphs(graph, max_distance=2, max_nodes_pre=30, max_nodes_post=50):
     """
     for node, data in graph.nodes(data=True):
         generations = [{node}]
-        while (
+        while (  # noqa: W503
             generations[-1]  # There are nodes in the last generation.
-            and len(set.union(*generations)) <= max_nodes_pre  # Current subgraph is still small.
-            and len(generations) <= max_distance  # Maximal node distance not reached yet.
+            # Current subgraph is still small:
+            and len(set.union(*generations)) <= max_nodes_pre  # noqa: W503
+           # Maximal node distance not reached yet:
+            and len(generations) <= max_distance  # noqa: W503
         ):
             nextgen = set.union(*[set(graph[n].keys()) for n in generations[-1]])
             if len(nextgen) > max_nodes_post:

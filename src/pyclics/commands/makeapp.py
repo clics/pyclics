@@ -35,7 +35,6 @@ def parse_cluster_method(s):
 def run(args):
     args.repos._log = args.log
 
-
     varieties = args.repos.db.varieties
     lgeo = geojson.FeatureCollection([v.as_geojson() for v in varieties])
     args.repos.json_dump(lgeo, 'app', 'source', 'langsGeo.json')
@@ -46,7 +45,7 @@ def run(args):
         shutil.copy(str(p), str(target_dir / p.name))
 
     if app_source.joinpath('cluster-names.js').exists():  # pragma: no cover
-       app_source.joinpath('cluster-names.js').unlink()
+        app_source.joinpath('cluster-names.js').unlink()
 
     words = collections.OrderedDict()
     for _, formA, formB in args.repos.iter_colexifications(varieties):

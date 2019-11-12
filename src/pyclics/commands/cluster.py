@@ -102,8 +102,8 @@ def run(args):
                     ])
         if len(sg) > 1:
             fn = cluster_dir / (
-                    (str(idx) if algo == 'subgraph' else graph.node[nodes[0]]['ClusterName']) +
-                    '.json')
+                (str(idx) if algo == 'subgraph' else graph.node[nodes[0]]['ClusterName']) +
+                '.json')
             jsonlib.dump(json_graph.adjacency_data(sg), fn, sort_keys=True)
             for node in nodes:
                 cluster_names[graph.node[node]['Gloss']] = fn.stem
