@@ -129,8 +129,10 @@ class Clics(API):
     def iter_colexifications(self, varieties=None):
         varieties = varieties or self.db.varieties
         for v_, forms in tqdm(self.db.iter_wordlists(varieties), total=len(varieties), leave=False):
-            for v in self.colexifier(forms):
-                for formA, formB in itertools.combinations(v, r=2):
-                    # check for identical concept resulting from word-variants
-                    if formA.concepticon_id != formB.concepticon_id:
-                        yield v_, formA, formB
+            for gen in self._iter_colexifications(forms):
+                for formA, formB in gen:
+                    yield v_, formA, formB
+
+    def _iter_colexifications(self, forms):  # only included for better testability!
+        for colexified in self.colexifier(forms):
+            yield itertools.combinations(colexified, r=2)

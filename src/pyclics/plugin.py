@@ -29,26 +29,30 @@ def full_colexification(forms):
     """
     Calculate all colexifications inside a wordlist.
 
-    :param forms: The forms of a wordlist.
+    :param forms: The forms of a wordlist, **sorted by clics_form**.
 
-    :return: colexifictions, a dictionary taking the entries as keys and tuples
-        consisting of a concept and its index as values
-    :rtype: dict
+    :return: Generator of colexifictions - i.e. of `list`s, grouping `forms` by `clics_form`.
 
-    Note
-    ----
-    Colexifications are identified using a hash (Python dictionary) and a
-    linear iteration through the graph. As a result, this approach is very
-    fast, yet the results are potentially a bit counter-intuitive, as they are
-    presented as a dictionary containing word values as keys. To get all
-    colexifications in sets, however, you can just take the values of the
-    dictionary.
+    Notes
+    -----
+    - Of variant forms for the same concept, resulting in the same `clics_form`, only one form
+      will be picked.
+    - Colexifications are identified using a hash (Python dictionary) and a
+      linear iteration through the graph. As a result, this approach is very fast.
     """
-    cols = defaultdict(list)
-    for form in forms:
-        if form.clics_form and form.concepticon_id:
-            cols[form.clics_form].append(form)
-    return list(cols.values())
+    # We assume the forms to be sorted by clics_form already:
+    expected, seen = len(forms), 0
+    for _, _forms in itertools.groupby(forms, lambda f: f.clics_form):
+        cids = set()
+        fs = []
+        for f in _forms:
+            seen += 1
+            if f.concepticon_id not in cids:
+                fs.append(f)
+                cids.add(f.concepticon_id)
+        yield fs
+    if expected != seen:  # pragma: no cover
+        raise ValueError('forms not properly ordered')
 
 
 #
