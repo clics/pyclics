@@ -55,7 +55,7 @@ class OAIRecord:  # pragma: no cover
             self.doi)
 
 
-def iter_records():
+def iter_records():  # pragma: no cover
     url = URL
     while url:
         recs = ElementTree.fromstring(requests.get(url).text)
