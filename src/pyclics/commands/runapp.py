@@ -6,6 +6,7 @@ Stop with CTRL-q
 import argparse
 import subprocess
 import webbrowser
+import time
 
 from clldutils.clilib import confirm
 
@@ -28,10 +29,11 @@ def run(args):  # pragma: no cover
                 appdir))
     proc = subprocess.Popen(
         ['python', '-u', '-m', 'http.server', str(args.port)],
-        cwd=str(args.repos.repos / 'app'),
+        cwd=str(appdir),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
     )
+    time.sleep(2)
     url = 'http://localhost:{0}'.format(args.port)
     webbrowser.open(url)
     print('You should now see {0} opened in yur browser. If you are done using the app, press '

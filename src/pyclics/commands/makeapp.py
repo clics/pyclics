@@ -45,6 +45,9 @@ def run(args):
         target_dir = app_source.parent if p.suffix == '.html' else app_source
         shutil.copy(str(p), str(target_dir / p.name))
 
+    if app_source.joinpath('cluster-names.js').exists():  # pragma: no cover
+       app_source.joinpath('cluster-names.js').unlink()
+
     words = collections.OrderedDict()
     for _, formA, formB in args.repos.iter_colexifications(varieties):
         words[formA.gid] = [formA.clics_form, formA.form]

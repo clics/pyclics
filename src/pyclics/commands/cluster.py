@@ -106,7 +106,7 @@ def run(args):
                     '.json')
             jsonlib.dump(json_graph.adjacency_data(sg), fn, sort_keys=True)
             for node in nodes:
-                cluster_names[graph.node[node]['Gloss']] = graph.node[node]['ClusterName']
+                cluster_names[graph.node[node]['Gloss']] = fn.stem
         else:
             removed += [list(nodes)[0]]
     graph.remove_nodes_from(removed)
