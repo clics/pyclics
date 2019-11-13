@@ -49,6 +49,7 @@ git push --tags origin
 
 - Increment the version number and append `.dev0` to start the new development cycle:
   - setup.py
+  - src/pyclics/__init__.py
 
 - Commit/push the version change:
 ```shell
