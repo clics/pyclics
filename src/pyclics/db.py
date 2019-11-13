@@ -32,9 +32,21 @@ GROUP BY ds.id"""
         Database_.__init__(self, fname)
         self.clics_form = clics_form
 
+    def _datasets(self):
+        return self.fetchall("select id, version from dataset")
+
     @property
     def datasets(self):
-        return sorted(r[0] for r in self.fetchall("select id from dataset"))
+        return sorted(r[0] for r in self._datasets())
+
+    @property
+    def datasetmeta(self):
+        res = {}
+        for id_, version in self._datasets():
+            res[id_] = list(
+                self.fetchall("select key, value from datasetmeta where dataset_id = '%s'" % id_))\
+                + [('version', version)]
+        return res
 
     def update_schema(self):
         Database_.update_schema(self)

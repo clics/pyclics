@@ -20,6 +20,7 @@ def test_clics_form(form, clics):
 
 def test_db_queries(db):
     assert len(db.datasets) == 1
+    assert len(db.datasetmeta) == 1
 
     varieties = db.varieties
     assert len(varieties) == 9
