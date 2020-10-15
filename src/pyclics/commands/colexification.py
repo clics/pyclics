@@ -1,9 +1,12 @@
 """
 Compute the colexification graph
 """
+
+import csv
+from collections import defaultdict
+
 import networkx as nx
 from clldutils.clilib import Table, add_format
-
 
 def register(parser):
     add_format(parser, default='simple')
@@ -51,6 +54,51 @@ def run(args):
             v_.family,
             clean(formA.form),
             clean(formB.form)]))
+
+    # Build map of variety name to Glottocode, for per-language output
+    lang_map = {
+       '%s-%s' % (dataset_id, lang_id) : glottocode
+        for dataset_id, lang_id, glottocode in
+        args.repos.db.fetchall("SELECT dataset_ID, ID, Glottocode FROM languagetable")
+    }
+
+    # Collect lists of concepts for each language variety, so that we can check if a colexification would be
+    # possible in it (i.e., if there is enough data)
+    concepts = defaultdict(set)
+    for dataset_id, lang_id, concepticon_id in args.repos.db.fetchall("""
+        SELECT f.dataset_ID, f.Language_ID, p.Concepticon_ID
+        FROM formtable AS f, parametertable AS P
+        WHERE f.Parameter_ID = p.ID AND f.dataset_ID = p.dataset_ID"""):
+        concepts["%s-%s" % (dataset_id, lang_id)].add(concepticon_id)
+
+    # Iterate over all edges and collect data
+    counts = defaultdict(int)
+    possible = defaultdict(int)
+    for concept_a, concept_b, data in G.edges(data=True):
+        # Don't consider the edge if we don't have at least one language in it
+        if not data['languages']:
+            continue
+
+        # Inspect all languages
+        for lang in lang_map:
+            if lang in data['languages']:
+                counts[lang] += 1
+                possible[lang] += 1
+            else:
+                if concept_a in concepts[lang] and concept_b in concepts[lang]:
+                    possible[lang] += 1
+
+    # Output per-language info
+    with open("per_language.tsv", 'w') as tsvfile:
+        writer = csv.DictWriter(tsvfile, delimiter="\t", fieldnames=['LANG_KEY', 'GLOTTOCODE', 'COLEXIFICATIONS', 'POTENTIAL'])
+        writer.writeheader()
+        for lang in sorted(lang_map):
+            writer.writerow({
+                'LANG_KEY' : lang,
+                'GLOTTOCODE' : lang_map[lang],
+                'COLEXIFICATIONS' : counts[lang],
+                'POTENTIAL' : possible[lang]
+                })
 
     edges = {}
     for edgeA, edgeB, data in G.edges(data=True):
