@@ -17,6 +17,18 @@ def register(parser):
         type=int,
         default=10,
     )
+    parser.add_argument(
+        "--colex2lang",
+        help="Path to output with the list of languages colexifying a concept. Only written if an output file is provided.",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--colexstats",
+        help="Path to output with the colexification statistics per language. Only written if an output file is provided.",
+        type=str,
+        default=None,
+    )
 
 
 def run(args):
@@ -63,96 +75,67 @@ def run(args):
             )
         )
 
-    # Build map of variety name to Glottocode, for per-language output
-    lang_map = {
-        "%s-%s" % (dataset_id, lang_id): glottocode
-        for dataset_id, lang_id, glottocode in args.repos.db.fetchall(
-            "SELECT dataset_ID, ID, Glottocode FROM languagetable"
-        )
-    }
+    # If either the colex2lang or colexstats files are requested,
+    # build map of variety name to Glottocode, a map of concepts,
+    # and collected the statistics
+    if any([args.colex2lang, args.colexstats]):
+        lang_map = {
+            "%s-%s" % (dataset_id, lang_id): glottocode
+            for dataset_id, lang_id, glottocode in args.repos.db.fetchall(
+                "SELECT dataset_ID, ID, Glottocode FROM languagetable"
+            )
+        }
 
-    # Collect lists of concepts for each language variety, so that we can check if a colexification would be
-    # possible in it (i.e., if there is enough data)
-    concepts = defaultdict(set)
-    for dataset_id, lang_id, concepticon_id in args.repos.db.fetchall(
-        """
-        SELECT f.dataset_ID, f.Language_ID, p.Concepticon_ID
-        FROM formtable AS f, parametertable AS P
-        WHERE f.Parameter_ID = p.ID AND f.dataset_ID = p.dataset_ID"""
-    ):
-        concepts["%s-%s" % (dataset_id, lang_id)].add(concepticon_id)
+        # Collect lists of concepts for each language variety, so that we can
+        # check if a colexification would be possible in it (i.e., if there is
+        # enough data)
+        concepts = defaultdict(set)
+        for dataset_id, lang_id, concepticon_id in args.repos.db.fetchall(
+            """
+            SELECT f.dataset_ID, f.Language_ID, p.Concepticon_ID
+            FROM formtable AS f, parametertable AS P
+            WHERE f.Parameter_ID = p.ID AND f.dataset_ID = p.dataset_ID"""
+        ):
+            concepts["%s-%s" % (dataset_id, lang_id)].add(concepticon_id)
 
-    # Iterate over all edges and collect data
-    all_counts, threshold_counts = defaultdict(int), defaultdict(int)
-    all_possible, threshold_possible = defaultdict(int), defaultdict(int)
-    colex2lang = defaultdict(set)
-    for concept_a, concept_b, data in G.edges(data=True):
-        # Collect concept2languages info (Ezequiel Koile's request)
-        for lang, glottocode in lang_map.items():
-            if lang in data["languages"]:
-                colex2lang[concept_a, concept_b].add(glottocode)
+        # Iterate over all edges and collect data
+        all_counts, threshold_counts = defaultdict(int), defaultdict(int)
+        all_possible, threshold_possible = defaultdict(int), defaultdict(int)
+        colex2lang = defaultdict(set)
+        for concept_a, concept_b, data in G.edges(data=True):
+            # Collect concept2languages info
+            for lang, glottocode in lang_map.items():
+                if lang in data["languages"]:
+                    colex2lang[concept_a, concept_b].add(glottocode)
 
-        # Collect language colexification affinity (David Gil's request)
-        # Don't consider the edge if we don't have at least one language in it
-        if not data["languages"]:
-            continue
+            # Collect language colexification affinity (David Gil's request)
+            # Don't consider the edge if we don't have at least one language in it
+            if not data["languages"]:
+                continue
 
-        # Check if the current concept pair passes the threshold filter
-        filter_family, filter_lang, filter_words = True, True, True
-        if args.edgefilter == "families":
-            filter_family = len(data["families"]) >= args.threshold
-        if args.edgefilter == "languages":
-            filter_lang = len(data["languages"]) >= args.threshold
-        if args.edgefilter == "words":
-            filter_words = len(data["words"]) >= args.threshold
-        pass_filter = all([filter_family, filter_lang, filter_words])
+            # Check if the current concept pair passes the threshold filter
+            filter_family, filter_lang, filter_words = True, True, True
+            if args.edgefilter == "families":
+                filter_family = len(data["families"]) >= args.threshold
+            if args.edgefilter == "languages":
+                filter_lang = len(data["languages"]) >= args.threshold
+            if args.edgefilter == "words":
+                filter_words = len(data["words"]) >= args.threshold
+            pass_filter = all([filter_family, filter_lang, filter_words])
 
-        # Inspect all languages
-        for lang in lang_map:
-            if lang in data["languages"]:
-                all_counts[lang] += 1
-                all_possible[lang] += 1
-                if pass_filter:
-                    threshold_counts[lang] += 1
-                    threshold_possible[lang] += 1
-            else:
-                if concept_a in concepts[lang] and concept_b in concepts[lang]:
+            # Inspect all languages
+            for lang in lang_map:
+                if lang in data["languages"]:
+                    all_counts[lang] += 1
                     all_possible[lang] += 1
                     if pass_filter:
+                        threshold_counts[lang] += 1
                         threshold_possible[lang] += 1
-
-    # Output colex2lang info (Ezequiel Koile request)
-    with open("colex2lang.tsv", "w") as tsvfile:
-        tsvfile.write("CONCEPT_A\tCONCEPT_B\tGLOTTOCODES\n")
-        for entry, langs in colex2lang.items():
-            tsvfile.write("%s\t%s\t%s\n" % (entry[0], entry[1], ",".join(langs)))
-
-    # Output per-language info (David Gil request)
-    with open("per_language.tsv", "w") as tsvfile:
-        writer = csv.DictWriter(
-            tsvfile,
-            delimiter="\t",
-            fieldnames=[
-                "LANG_KEY",
-                "GLOTTOCODE",
-                "COLEXIFICATIONS_ALL",
-                "POTENTIAL_ALL",
-                "COLEXIFICATIONS_THRESHOLD",
-                "POTENTIAL_THRESHOLD",
-            ],
-        )
-        writer.writeheader()
-        for lang in sorted(lang_map):
-            writer.writerow(
-                {
-                    "LANG_KEY": lang,
-                    "GLOTTOCODE": lang_map[lang],
-                    "COLEXIFICATIONS_ALL": all_counts[lang],
-                    "POTENTIAL_ALL": all_possible[lang],
-                    "COLEXIFICATIONS_THRESHOLD": threshold_counts[lang],
-                    "POTENTIAL_THRESHOLD": threshold_possible[lang],
-                }
-            )
+                else:
+                    if concept_a in concepts[lang] and concept_b in concepts[lang]:
+                        all_possible[lang] += 1
+                        if pass_filter:
+                            threshold_possible[lang] += 1
 
     edges = {}
     for edgeA, edgeB, data in G.edges(data=True):
@@ -205,3 +188,38 @@ def run(args):
                 break
 
     print(args.repos.save_graph(G, args.graphname, args.threshold, args.edgefilter))
+
+    # Output colex2lang info
+    if args.colex2lang:
+        with open(args.colex2lang, "w") as tsvfile:
+            tsvfile.write("CONCEPT_A\tCONCEPT_B\tGLOTTOCODES\n")
+            for entry, langs in colex2lang.items():
+                tsvfile.write("%s\t%s\t%s\n" % (entry[0], entry[1], ",".join(langs)))
+
+    # Output per-language info
+    if args.colexstats:
+        with open(args.colexstats, "w") as tsvfile:
+            writer = csv.DictWriter(
+                tsvfile,
+                delimiter="\t",
+                fieldnames=[
+                    "LANG_KEY",
+                    "GLOTTOCODE",
+                    "COLEXIFICATIONS_ALL",
+                    "POTENTIAL_ALL",
+                    "COLEXIFICATIONS_THRESHOLD",
+                    "POTENTIAL_THRESHOLD",
+                ],
+            )
+            writer.writeheader()
+            for lang in sorted(lang_map):
+                writer.writerow(
+                    {
+                        "LANG_KEY": lang,
+                        "GLOTTOCODE": lang_map[lang],
+                        "COLEXIFICATIONS_ALL": all_counts[lang],
+                        "POTENTIAL_ALL": all_possible[lang],
+                        "COLEXIFICATIONS_THRESHOLD": threshold_counts[lang],
+                        "POTENTIAL_THRESHOLD": threshold_possible[lang],
+                    }
+                )
