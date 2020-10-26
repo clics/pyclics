@@ -36,6 +36,8 @@ setup(
         'unidecode',
         'zope.component',
         'zope.interface',
+        'pybtex<0.23; python_version < "3.6"',
+        'pybtex; python_version > "3.5"',
     ],
     extras_require={
         'dev': [
@@ -47,6 +49,7 @@ setup(
         'test': [
             'pytest>=5.0',
             'pytest-cov',
+            'pytest-mock',
             'coverage>=4.2',
         ],
     },
