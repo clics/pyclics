@@ -45,8 +45,7 @@ setup(
             'twine',
         ],
         'test': [
-            'pytest>=3.6',
-            'pytest-mock',
+            'pytest>=5.0',
             'pytest-cov',
             'coverage>=4.2',
         ],
