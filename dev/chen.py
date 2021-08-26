@@ -12,9 +12,13 @@ from lingpy.algorithm import extra
 from lingpy.convert.graph import networkx2igraph
 
 
-def get_colexifications(wordlist):
+def get_colexifications(wordlist, family=None):
     G = nx.Graph()
-    for language in wordlist.languages:
+    if family:
+        languages = [language for language in wordlist.languages if language.family == family]
+    else:
+        languages = [language for language in wordlist.languages]
+    for language in languages:
         cols = defaultdict(list)
         for form in language.forms_with_sounds:
             tform = str(form.sounds)
@@ -108,7 +112,7 @@ def cluster_colexifications(
 
 wl = Wordlist([Dataset.from_metadata(CHM().cldf_dir / "cldf-metadata.json")],
         ts=CLTS().bipa)
-G = get_colexifications(wl)
+G = get_colexifications(wl, family="Hmong-Mien")
 cluster_colexifications(G)
 
 
