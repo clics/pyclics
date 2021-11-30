@@ -15,7 +15,6 @@ setup(
         'Intended Audience :: Science/Research',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
@@ -23,7 +22,7 @@ setup(
     package_dir={'': 'src'},
     include_package_data=True,
     zip_safe=False,
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     install_requires=[
         'attrs>=18.1',
         'pylexibank>=2.0',
@@ -32,12 +31,11 @@ setup(
         'pyglottolog>=2.0',
         'geojson',
         'python-igraph>=0.7.1',
-        'networkx==2.1',  # We rely on the `node` attribute
+        'networkx>=2.1',  # We rely on the `node` attribute
         'unidecode',
         'zope.component',
         'zope.interface',
-        'pybtex<0.23; python_version < "3.6"',
-        'pybtex; python_version > "3.5"',
+        'pybtex',
     ],
     extras_require={
         'dev': [

@@ -18,6 +18,7 @@ def api(repos, db):
 @pytest.fixture
 def _main(repos):
     def cmd(*args, **kw):
+        kw['log'] = logging.getLogger(__name__)
         main(args=['--repos', str(repos)] + list(args), **kw)
     return cmd
 

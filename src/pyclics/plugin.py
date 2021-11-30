@@ -86,8 +86,8 @@ def infomap(graph, kw):
     if kw.pop('normalize', False):
         for edgeA, edgeB, data in tqdm(_graph.edges(data=True), desc='normalizing', leave=False):
             data[str('weight')] = data[edge_weights] ** 2 / (
-                _graph.node[edgeA][vertex_weights] +
-                _graph.node[edgeB][vertex_weights] -
+                _graph.nodes[edgeA][vertex_weights] +
+                _graph.nodes[edgeB][vertex_weights] -
                 data[edge_weights])
         vertex_weights = None
         edge_weights = 'weight'

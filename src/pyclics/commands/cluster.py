@@ -67,14 +67,14 @@ def run(args):
         sg = graph.subgraph(nodes)
         if len(sg) > 1:
             d_ = sorted(sg.degree(), key=lambda x: x[1], reverse=True)
-            d = [graph.node[a]['Gloss'] for a, b in d_][0]
+            d = [graph.nodes[a]['Gloss'] for a, b in d_][0]
             cluster_name = '{0}_{1}_{2}'.format(algo, idx, d)
         else:
-            d = graph.node[nodes[0]]['Gloss']
-            cluster_name = '{0}_{1}_{2}'.format(algo, idx, graph.node[nodes[0]]['Gloss'])
+            d = graph.nodes[nodes[0]]['Gloss']
+            cluster_name = '{0}_{1}_{2}'.format(algo, idx, graph.nodes[nodes[0]]['Gloss'])
         for node in nodes:
-            graph.node[node]['ClusterName'] = cluster_name
-            graph.node[node]['CentralConcept'] = d
+            graph.nodes[node]['ClusterName'] = cluster_name
+            graph.nodes[node]['CentralConcept'] = d
 
     args.log.info('computed cluster names')
 
@@ -91,22 +91,22 @@ def run(args):
                 graph[node][n]['FamilyWeight'] >= neighbor_weight and
                 n not in sg]
             if neighbors:
-                sg.node[node]['OutEdge'] = []
+                sg.nodes[node]['OutEdge'] = []
                 for n in neighbors:
-                    sg.node[node]['OutEdge'].append([
-                        graph.node[n]['ClusterName'],
-                        graph.node[n]['CentralConcept'],
-                        graph.node[n]['Gloss'],
+                    sg.nodes[node]['OutEdge'].append([
+                        graph.nodes[n]['ClusterName'],
+                        graph.nodes[n]['CentralConcept'],
+                        graph.nodes[n]['Gloss'],
                         graph[node][n]['WordWeight'],
                         n
                     ])
         if len(sg) > 1:
             fn = cluster_dir / (
-                (str(idx) if algo == 'subgraph' else graph.node[nodes[0]]['ClusterName']) +
+                (str(idx) if algo == 'subgraph' else graph.nodes[nodes[0]]['ClusterName']) +
                 '.json')
             jsonlib.dump(json_graph.adjacency_data(sg), fn, sort_keys=True)
             for node in nodes:
-                cluster_names[graph.node[node]['Gloss']] = fn.stem
+                cluster_names[graph.nodes[node]['Gloss']] = fn.stem
         else:
             removed += [list(nodes)[0]]
     graph.remove_nodes_from(removed)
@@ -115,7 +115,7 @@ def run(args):
             data['OutEdge'] = '//'.join(['/'.join([str(y) for y in x]) for x in data['OutEdge']])
     removed = []
     for nA, nB, data in tqdm(graph.edges(data=True), desc='remove edges', leave=False):
-        if graph.node[nA][algo] != graph.node[nB][algo] and data['FamilyWeight'] < 5:
+        if graph.nodes[nA][algo] != graph.nodes[nB][algo] and data['FamilyWeight'] < 5:
             removed += [(nA, nB)]
     graph.remove_edges_from(removed)
 
