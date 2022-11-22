@@ -12,7 +12,7 @@ import numpy as np
 
 
 def get_colexifications(
-        wordlist, family=None, concepts=None):
+        wordlist, family=None, concepts=None, languages=None):
     """
     @param wordlist: A cltoolkit Wordlist instance.
     @param family: A string for a language family (valid in Glottolog). When set to None, won't filter by family.
@@ -21,10 +21,12 @@ def get_colexifications(
     @returns: A networkx.Graph instance.
     """
     graph = nx.Graph()
-    if family is None:
-        languages = [language for language in wordlist.languages]
-    else:
-        languages = [language for language in wordlist.languages if language.family == family]
+    if languages is None:
+        if family is None:
+            languages = [language for language in wordlist.languages]
+        else:
+            languages = [language for language in wordlist.languages if language.family == family]
+    
     if concepts is None:
         concepts = [concept.concepticon_gloss for concept in wordlist.concepts]
 
@@ -148,8 +150,6 @@ def get_transition_matrix(graph, steps=10, weight="weight", normalize=False):
     for node in graph.nodes:
         if len(graph[node]) >= 1:
             nodes.append(node)
-    print("retained matrix with {0} nodes out of {1}".format(len(nodes), len(graph)))
-
     a_matrix: list[list[int]] = [[0 for _ in nodes] for _ in nodes]
 
     for node_a, node_b, data in graph.edges(data=True):
