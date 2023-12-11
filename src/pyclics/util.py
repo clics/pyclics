@@ -4,11 +4,35 @@ from collections import defaultdict
 from cldfcatalog import Config
 from cldfbench.catalogs import Glottolog, Concepticon
 import igraph
+import networkx as nx
+import html
 
 __all__ = ['networkx2igraph', 'get_communities', 'parse_kwargs']
 
 CATALOGS = {'glottolog': Glottolog, 'concepticon': Concepticon}
 
+
+def write_gml(graph, path):
+    """
+    Write a graph to GML format (using unicode).
+
+    The graph will be adjusted in such a way that all list and set values in edge and
+    node attributes will be represented in the form of a string with // as separator.
+    """
+    # modify graph TODO
+    ng = graph.copy()
+    for node, data in ng.nodes(data=True):
+        for k, v in data.items():
+            if isinstance(v, (list, set)):
+                data[k] = '//'.join([str(x) for x in v])
+    for nA, nB, data in ng.edges(data=True):
+        for k, v in data.items():
+            if isinstance(v, (list, set)):
+                data[k] = '//'.join([str(x) for x in v])
+    with open(path, 'w') as f:
+        for line in nx.generate_gml(ng):
+            f.write(html.unescape(line) + '\n')
+            
 
 def catalog(name, args):
     repos = getattr(args, name) or Config.from_file().get_clone(name)
