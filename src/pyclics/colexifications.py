@@ -11,29 +11,37 @@ from itertools import combinations
 import numpy as np
 
 
-def get_colexifications(
-        wordlist, family=None, concepts=None, languages=None):
+def full_colexifications(
+        wordlist, family=None, languages=None,
+        concept_attr="concepticon_gloss"
+        ):
     """
     @param wordlist: A cltoolkit Wordlist instance.
     @param family: A string for a language family (valid in Glottolog). When set to None, won't filter by family.
     @param concepts: A list of concepticon glosses that will be compared with the glosses in the wordlist.
         If set to None, concepts won't be filtered.
     @returns: A networkx.Graph instance.
+
+    @todo: discuss if we should add a form_factory, deleting tones,
+           and the like, for this part of the analysis as well,
+           as we do for partial colexifications
     """
     graph = nx.Graph()
+    # concept lookup checks for relevant concepticon attribute
+    concept_lookup = lambda x: getattr(x, concept_attr) if x else None
+    
     if languages is None:
         if family is None:
             languages = [language for language in wordlist.languages]
         else:
             languages = [language for language in wordlist.languages if language.family == family]
-    
-    if concepts is None:
-        concepts = [concept.concepticon_gloss for concept in wordlist.concepts]
+
+    concepts = [concept_lookup(concept) for concept in wordlist.concepts if concept_lookup(concept)]
 
     for language in languages:
         cols = defaultdict(list)
         for form in language.forms_with_sounds:
-            if form.concept.concepticon_gloss in concepts:
+            if concept_lookup(form.concept) in concepts:
                 tform = str(form.sounds)
                 cols[tform] += [form]
 
@@ -44,7 +52,7 @@ def get_colexifications(
                     (
                         tokens, 
                         [f for f in forms if f.concept], 
-                        [f.concept.id for f in forms if f.concept]
+                        [concept_lookup(f.concept) for f in forms if f.concept]
                         )
                     ]
             for (f, concept) in zip(colexs[-1][1], colexs[-1][2]):
@@ -100,10 +108,21 @@ def get_colexifications(
     return graph
 
 
+def normalize_weights(graph, name, node_attr, edge_attr, factor=10, smoothing=1):
+    for nA, nB, data in graph.edges(data=True):
+        nA_attr, nB_attr = (
+                graph.nodes[nA][node_attr], graph.nodes[nB][node_attr])
+        score = data[edge_attr]
+        if score <= smoothing:
+            score = 0
+        data[name] = factor * (score ** 2)/(min(nA_attr, nB_attr) ** 2)
+
+
 def weight_by_cognacy(
         graph, 
         threshold=0.45,
         cluster_method="infomap",
+        label="cognate_count"
         ):
     """
     Function weights the data by computing cognate sets.
@@ -141,12 +160,16 @@ def weight_by_cognacy(
                 weight = len(results)
         else:
             weight = 1
-        graph[nA][nB]["cognate_count"] = weight
+        graph[nA][nB][label] = weight
 
 
 def get_transition_matrix(graph, steps=10, weight="weight", normalize=False):
     """
     Compute transition matrix following Jackson et al. 2019
+
+    @param graph: The graph as networkx object.
+    @param steps: The number of steps in which the random walk repeats.
+    @param normalize: Decide if matrix should be normalized by dividing by the number of steps.
     """
     # prune nodes excluding singletons
     nodes = []
