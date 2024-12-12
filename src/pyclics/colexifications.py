@@ -49,7 +49,7 @@ def get_colexifications(
                     ]
             for (f, concept) in zip(colexs[-1][1], colexs[-1][2]):
                 try:
-                    graph.nodes[concept]["occurrences"] += [f.id]
+                    graph.nodes[concept]["forms"] += [f.id]
                     graph.nodes[concept]["words"] += [tokens]
                     graph.nodes[concept]["varieties"] += [language.id]
                     graph.nodes[concept]["languages"] += [language.glottocode]
@@ -57,7 +57,7 @@ def get_colexifications(
                 except KeyError:
                     graph.add_node(
                             concept,
-                            occurrences=[f.id],
+                            forms=[f.id],
                             words=[tokens],
                             varieties=[language.id],
                             languages=[language.glottocode],
@@ -72,6 +72,7 @@ def get_colexifications(
                     # identical concepts need to be excluded
                     try:
                         graph[c1][c2]["count"] += 1
+                        graph[c1][c2]["forms"] += ["{0} / {1}".format(f1.id, f2.id)]
                         graph[c1][c2]["words"] += [tokens]
                         graph[c1][c2]["varieties"] += [language.id]
                         graph[c1][c2]["languages"] += [language.glottocode]
@@ -81,19 +82,21 @@ def get_colexifications(
                                 c1,
                                 c2,
                                 count=1,
+                                forms=["{0} / {1}".format(f1.id, f2.id)],
                                 words=[tokens],
                                 varieties=[language.id],
                                 languages=[language.glottocode],
                                 families=[language.family],
                                 )
+    counts = [
+            ("varieties", "variety"), ("languages", "language"), 
+            ("families", "family"), ("forms", "form")]
     for nA, nB, data in graph.edges(data=True):
-        graph[nA][nB]["variety_count"] = len(set(data["varieties"]))
-        graph[nA][nB]["language_count"] = len(set(data["languages"]))
-        graph[nA][nB]["family_count"] = len(set(data["families"]))
+        for pl, sg in counts:
+            graph[nA][nB][sg+"_count"] = len(set(data[pl]))
     for node, data in graph.nodes(data=True):
-        graph.nodes[node]["language_count"] = len(set(data["languages"]))
-        graph.nodes[node]["variety_count"] = len(set(data["varieties"]))
-        graph.nodes[node]["family_count"] = len(set(data["families"]))
+        for pl, sg in counts:
+            graph.nodes[node][sg+"_count"] = len(set(data[pl]))
     return graph
 
 
@@ -169,3 +172,14 @@ def get_transition_matrix(graph, steps=10, weight="weight", normalize=False):
         new_p_matrix = new_p_matrix / steps
 
     return new_p_matrix, nodes, a_matrix
+
+
+
+def normalize_weights(graph, name, node_attr, edge_attr, factor=10, smoothing=1):
+    for nA, nB, data in graph.edges(data=True):
+        nA_attr, nB_attr = (
+                graph.nodes[nA][node_attr], graph.nodes[nB][node_attr])
+        score = data[edge_attr]
+        if score <= smoothing:
+            score = 0
+        data[name] = factor * (score ** 2)/(min(nA_attr, nB_attr) ** 2)
