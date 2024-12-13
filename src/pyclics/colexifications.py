@@ -108,15 +108,6 @@ def get_colexifications(
     return graph
 
 
-def normalize_weights(graph, name, node_attr, edge_attr, factor=10, smoothing=1):
-    for nA, nB, data in graph.edges(data=True):
-        nA_attr, nB_attr = (
-                graph.nodes[nA][node_attr], graph.nodes[nB][node_attr])
-        score = data[edge_attr]
-        if score <= smoothing:
-            score = 0
-        data[name] = factor * (score ** 2)/(min(nA_attr, nB_attr) ** 2)
-
 
 def weight_by_cognacy(
         graph, 
@@ -195,7 +186,6 @@ def get_transition_matrix(graph, steps=10, weight="weight", normalize=False):
         new_p_matrix = new_p_matrix / steps
 
     return new_p_matrix, nodes, a_matrix
-
 
 
 def normalize_weights(graph, name, node_attr, edge_attr, factor=10, smoothing=1):
