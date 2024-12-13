@@ -11,7 +11,7 @@ from itertools import combinations
 import numpy as np
 
 
-def full_colexifications(
+def get_colexifications(
         wordlist, family=None, languages=None,
         concept_attr="concepticon_gloss"
         ):
