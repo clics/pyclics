@@ -80,7 +80,7 @@ def get_colexifications(
                     # identical concepts need to be excluded
                     try:
                         graph[c1][c2]["count"] += 1
-                        graph[c1][c2]["forms"] += ["{0} / {1}".format(f1.id, f2.id)]
+                        graph[c1][c2]["forms"] += ["{0}/{1}".format(f1.id, f2.id)]
                         graph[c1][c2]["words"] += [tokens]
                         graph[c1][c2]["varieties"] += [language.id]
                         graph[c1][c2]["languages"] += [language.glottocode]
