@@ -90,7 +90,7 @@ def get_colexifications(
                                 c1,
                                 c2,
                                 count=1,
-                                forms=["{0} / {1}".format(f1.id, f2.id)],
+                                forms=["{0}/{1}".format(f1.id, f2.id)],
                                 words=[tokens],
                                 varieties=[language.id],
                                 languages=[language.glottocode],
