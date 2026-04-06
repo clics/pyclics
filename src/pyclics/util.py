@@ -7,7 +7,7 @@ import igraph
 import networkx as nx
 import html
 
-__all__ = ['networkx2igraph', 'get_communities', 'parse_kwargs']
+__all__ = ['networkx2igraph', 'get_communities', 'parse_kwargs', 'write_gml']
 
 CATALOGS = {'glottolog': Glottolog, 'concepticon': Concepticon}
 
@@ -24,15 +24,15 @@ def write_gml(graph, path):
     for node, data in ng.nodes(data=True):
         for k, v in data.items():
             if isinstance(v, (list, set)):
-                data[k] = '//'.join([str(x) for x in v])
+                data[k] = '//'.join(str(x) for x in v)
     for nA, nB, data in ng.edges(data=True):
         for k, v in data.items():
             if isinstance(v, (list, set)):
-                data[k] = '//'.join([str(x) for x in v])
+                data[k] = '//'.join(str(x) for x in v)
     with open(path, 'w') as f:
         for line in nx.generate_gml(ng):
             f.write(html.unescape(line) + '\n')
-            
+
 
 def catalog(name, args):
     repos = getattr(args, name) or Config.from_file().get_clone(name)
@@ -89,7 +89,7 @@ def iter_subgraphs(graph, max_distance=2, max_nodes_pre=30, max_nodes_post=50):
             generations[-1]  # There are nodes in the last generation.
             # Current subgraph is still small:
             and len(set.union(*generations)) <= max_nodes_pre  # noqa: W503
-           # Maximal node distance not reached yet:
+            # Maximal node distance not reached yet:
             and len(generations) <= max_distance  # noqa: W503
         ):
             nextgen = set.union(*[set(graph[n].keys()) for n in generations[-1]])

@@ -45,7 +45,7 @@ def main(args=None, catch_all=False, parsed_args=None, log=None):
 
     args.api = args.repos
     with contextlib.ExitStack() as stack:
-        if not log:
+        if not log:  # pragma: no cover
             stack.enter_context(Logging(args.log, level=args.log_level))
         else:
             args.log = log

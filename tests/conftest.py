@@ -1,6 +1,6 @@
-from tempfile import NamedTemporaryFile
-from pathlib import Path
 import shutil
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import pytest
 from networkx import Graph

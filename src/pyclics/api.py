@@ -1,7 +1,6 @@
 import json
 import itertools
 import collections
-import pkg_resources
 
 from clldutils.apilib import API
 from clldutils.misc import lazyproperty
@@ -48,10 +47,6 @@ class Clics(API):
 
         # Load defaults for pluggable functionality first:
         plugin.includeme(self.gsm)
-
-        # Now load third-party plugins:
-        for ep in pkg_resources.iter_entry_points('clics.plugin'):
-            ep.load()(self.gsm)
 
     @lazyproperty
     def cluster_algorithms(self):
