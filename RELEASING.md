@@ -15,7 +15,7 @@ flake8 src/
 ```
 
 - Change version to the new version number in
-  - setup.py
+  - setup.cfg
   - src/pyclics/__init__.py
 
 - Describe changes in `CHANGES.md`.
@@ -48,7 +48,7 @@ git push --tags origin
 ```
 
 - Increment the version number and append `.dev0` to start the new development cycle:
-  - setup.py
+  - setup.cfg
   - src/pyclics/__init__.py
 
 - Commit/push the version change:

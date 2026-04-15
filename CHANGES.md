@@ -1,6 +1,8 @@
 # Changelog
 
-## Version 2.1 [in development]
+## Version 3.1.1
+
+Pin dependencies. This is the last release, and it is used to create the CLICS4 dataset.
 
 
 ## Version 2.0
